@@ -5,11 +5,17 @@ import static io.fabric8.commands.support.CommandUtils.sortProfiles;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.lang.reflect.Array;
 import java.lang.reflect.Type;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -23,6 +29,7 @@ import org.apache.felix.gogo.commands.Command;
 import org.apache.felix.gogo.commands.CompleterValues;
 import org.apache.felix.gogo.commands.Option;
 import org.apache.karaf.shell.console.AbstractAction;
+import org.redhat.fabric.commands.model.Context;
 import org.redhat.fabric.commands.model.EnsembleContainer;
 import org.redhat.fabric.commands.model.ProfileDetails;
 import org.redhat.fabric.commands.model.Profiles;
@@ -31,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import io.fabric8.api.Container;
@@ -69,63 +77,56 @@ public class AssociatedContainersAction extends AbstractAction {
 	@Override
 	protected Object doExecute() throws Exception {
 		ProfileService profileService = fabricService.adapt(ProfileService.class);
-		Map<String, Profiles> printProfiles = null;
 		List<String> versions = profileService.getVersions();
-		Map<String, Profiles> containerMap = new HashMap<String, Profiles>();
+		Map<String, Profiles> masterContainerMap = null;
 		PrintStream out = System.out;
-
-		for (String version : versions) {
-			LOG.info("Version now {} ", version);
-			Version requiredVersion = profileService.getRequiredVersion(version);
-
-			List<Profile> profiles = sortProfiles(requiredVersion.getProfiles());
-
-			printProfiles = printProfiles(profileService, profiles, System.out, version);
-			for (Entry<String, Profiles> entrySet : printProfiles.entrySet()) {
-				if (containerMap.containsKey(entrySet.getKey())) {
-					Profiles associatedProfiles = containerMap.get(entrySet.getKey());
-					associatedProfiles.getProfileDetails()
-							.addAll(printProfiles.get(entrySet.getKey()).getProfileDetails());
-
-				} else {
-					containerMap.put(entrySet.getKey(), entrySet.getValue());
-				}
-			}
-		}
-
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		String containerInfo = gson.toJson(containerMap);
-		LOG.info("Container Map {}", containerMap);
-		LOG.info(containerInfo);
+
 		if (filePath == null && containersList == null) {
-			out.print(containerInfo);
-		}
+			LOG.info("Printing Configuration...");
 
-		// out.print("\n"+filePath+"\n");
-		// out.print("containerlist "+containersList);
+			masterContainerMap = getContainerMap(profileService, versions);
 
-		if (containersList != null && !containersList.isEmpty()) {
-			List<EnsembleContainer> containersToChange = getContainersToChange(profileService, filePath, containerMap,
-					out);
-			StringBuffer buf = new StringBuffer();
-			for (EnsembleContainer container : containersToChange) {
-				buf.append(container.getContainerName()).append(" ");
+			List<EnsembleContainer> ensembleContainerList = new ArrayList<EnsembleContainer>();
+
+			for (Map.Entry<String, Profiles> containerMap : masterContainerMap.entrySet()) {
+				EnsembleContainer ensembleContainer = new EnsembleContainer();
+				ensembleContainer.setContainerName(containerMap.getKey());
+				ensembleContainer.setContexts(getContextList(out, fabricService.getContainer(containerMap.getKey())));
+				ensembleContainer.setProfiles(containerMap.getValue().getProfileDetails());
+				ensembleContainerList.add(ensembleContainer);
 			}
-			out.print(buf.toString());
-			out.flush();
+
+			out.print(gson.toJson(ensembleContainerList));
 		}
 
-		if ((filePath != null && !filePath.isEmpty()) && containersList == null) {
-			List<EnsembleContainer> containersToChange = getContainersToChange(profileService, filePath, containerMap,
-					out);
+		else if (containersList != null && !containersList.isEmpty() && containersList.equalsIgnoreCase("listUrls")) {
+			Container[] containers = fabricService.getContainers();
+			Map<String, List<Context>> jolokiaMap = new HashMap<String, List<Context>>();
+			for (Container container : containers) {
+				getContextList(out, container);
+				jolokiaMap.put(container.getId(), getContextList(out, container));
+			}
+		}
 
+		/*
+		 * else if (containersList != null && !containersList.isEmpty()) {
+		 * List<EnsembleContainer> containersToChange =
+		 * getContainersToChange(profileService, filePath, containerMap, out);
+		 * StringBuffer buf = new StringBuffer(); for (EnsembleContainer container :
+		 * containersToChange) { buf.append(container.getContainerName()).append(" "); }
+		 * out.print(buf.toString()); out.flush(); }
+		 */
+
+		else if ((filePath != null && !filePath.isEmpty()) && containersList == null) {
+			masterContainerMap = getContainerMap(profileService, versions);
+			List<EnsembleContainer> containersToChange = getContainersToChange(profileService, filePath,
+					masterContainerMap, out);
 			for (EnsembleContainer container : containersToChange) {
-				if (container.getProfiles() != null && container.getProfiles().size() > 0
-						&& !container.getContainerName().toLowerCase().contains("root")) {
-
+				if (container.getProfiles() != null && container.getProfiles().size() > 0) {
 					out.append(container.getContainerName()).append(" ");
 					for (int i = 0; i < container.getProfiles().size(); i++) {
-						out.append(container.getProfiles().get(i));
+						out.append(container.getProfiles().get(i).getProfileName());
 						if (i != container.getProfiles().size() - 1) {
 							out.append(" ");
 						}
@@ -133,9 +134,133 @@ public class AssociatedContainersAction extends AbstractAction {
 					out.append("\n");
 				}
 			}
-			// out.print( gson.toJson(containersToChange) );
 		}
+
+		// out.print( gson.toJson(containersToChange) );
+
 		return null;
+	}
+
+	private Map<String, Profiles> getContainerMap(ProfileService profileService, List<String> versions) {
+
+		Map<String, Profiles> masterContainerMap = new HashMap<String, Profiles>();
+
+		for (String versionId : versions) {
+			LOG.info("Version now {} ", versionId);
+			Version requiredVersion = profileService.getRequiredVersion(versionId);
+			List<Profile> profiles = sortProfiles(requiredVersion.getProfiles());
+			Map<String, Profiles> containerMap = printProfiles(profileService, profiles, System.out, versionId);
+
+			for (Entry<String, Profiles> entrySet : containerMap.entrySet()) {
+				if (masterContainerMap.containsKey(entrySet.getKey())) {
+					Profiles associatedProfiles = masterContainerMap.get(entrySet.getKey());
+					associatedProfiles.getProfileDetails()
+							.addAll(containerMap.get(entrySet.getKey()).getProfileDetails());
+
+				} else {
+					masterContainerMap.put(entrySet.getKey(), entrySet.getValue());
+				}
+			}
+		}
+		return masterContainerMap;
+	}
+
+	private List<Context> getContextList(PrintStream out, Container container) {
+
+		Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
+
+		Container[] containers = fabricService.getContainers();
+		LOG.info("working on getting the jolokia map {} ,{} ", containers, fabricService.getCurrentContainer());
+		List<Context> contexts = new ArrayList<Context>();
+		StringBuilder sb = new StringBuilder();
+
+		if (container.isAlive() && !container.isRoot() && !container.isEnsembleServer() && container.isManaged()) {
+			if (sb.toString().length() > 0)
+				sb.delete(0, sb.toString().length() - 1);
+			String jolokiaUrl = container.getJolokiaUrl();
+			jolokiaUrl = jolokiaUrl.replace("MacBook-Pro", "localhost");
+
+			URL url = null;
+			HttpURLConnection connection = null;
+			try {
+				url = new URL((new StringBuilder(jolokiaUrl).append(
+						"/read/org.apache.camel:context=*,type=context,name=*/TotalRoutes,CamelId,State,StartedRoutes"))
+								.toString());
+
+				connection = (HttpURLConnection) url.openConnection();
+				String auth = "admin" + ":" + "admin";
+				byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
+				String authHeaderValue = "Basic " + new String(encodedAuth);
+				connection.setRequestProperty("Authorization", authHeaderValue);
+
+				connection.setRequestMethod("GET");
+				connection.connect();
+				if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+					BufferedReader buffer = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+					String line;
+
+					while ((line = buffer.readLine()) != null) {
+						sb.append(line);
+					}
+					// out.print("Container "+container.getId()+ " : \n "+sb.toString());
+				} else {
+					out.print("Error ....");
+				}
+				JsonObject fromJson = gson.fromJson(sb.toString(), JsonObject.class);
+				JsonObject asJsonObject = fromJson.get("value").getAsJsonObject();
+
+				Type profileListType = new TypeToken<HashMap<String, Context>>() {
+				}.getType();
+
+				HashMap<String, Context> fromJson2 = gson.fromJson(asJsonObject.toString(), profileListType);
+
+				for (Map.Entry<String, Context> actualEntries : fromJson2.entrySet()) {
+					contexts.add(actualEntries.getValue());
+				}
+			} catch (MalformedURLException e1) {
+				LOG.error("Unable to connect to container ...{}", container.getId());
+			} catch (ProtocolException e1) {
+				LOG.error("Unable to connect to container ...{}", container.getId());
+			} catch (IOException e) {
+				LOG.error("Unable to connect to container ...{}", container.getId());
+			}
+
+			catch (Exception e) {
+				LOG.info("Skipping the response that is error");
+			}
+		}
+
+		// when using with a file path it means we want to compare from
+		// existing environment
+		if (filePath != null && !filePath.isEmpty()) {
+			String fileData = readFile(filePath);
+
+			Type fileType = new TypeToken<HashMap<String, String>>() {
+			}.getType();
+
+			HashMap<String, String> fromJson = gson.fromJson(fileData, fileType);
+
+		}
+		return contexts;
+	}
+
+	private String readFile(String configurationPath) {
+
+		File oldJson = new File(configurationPath);
+
+		BufferedReader bo = null;
+		StringBuffer oldBuffer = new StringBuffer();
+
+		try {
+			bo = new BufferedReader(new FileReader(oldJson));
+			String line = "";
+			while ((line = bo.readLine()) != null) {
+				oldBuffer.append(line);
+			}
+		} catch (Exception e) {
+			LOG.error(e.getMessage(), e);
+		}
+		return oldBuffer.toString();
 	}
 
 	protected Map<String, Profiles> printProfiles(ProfileService profileService, List<Profile> profiles,
@@ -150,59 +275,61 @@ public class AssociatedContainersAction extends AbstractAction {
 			// skip profiles that do not exists (they may have been deleted)
 			if (profileService.hasProfile(versionId, profileId)) {
 				Container[] associatedContainers = fabricService.getAssociatedContainers(versionId, profileId);
-
 				String containers = "";
-
-				Profile currentProfile = profileService.getProfile(versionId, profileId);
 				List<String> bundles = null;
 				List<String> features = null;
 				List<String> parents = null;
 				List<String> repositories = null;
 
-				Map<String, String> configuration = currentProfile.getConfiguration(versionId);
 				for (Container associatedContainer : associatedContainers) {
-					containers = containers + associatedContainer.getId() + ",";
-					if (containerMap.get(associatedContainer.getId()) != null) {
-						Profiles containerProfiles = containerMap.get(associatedContainer.getId());
-						List<ProfileDetails> list = containerProfiles.getProfileDetails();
-						ProfileDetails details = new ProfileDetails();
-						bundles = profile.getBundles();
-						features = profile.getFeatures();
-						repositories = profile.getRepositories();
-						parents = profile.getParentIds();
-						Collections.sort(bundles);
-						Collections.sort(features);
-						Collections.sort(repositories);
-						details.setBundles(bundles);
-						details.setFeatures(features);
-						details.setParents(parents);
-						details.setRepositories(repositories);
-						details.setProfileName(profileId);
-						details.setProfileVersion(versionId);
-						list.add(details);
-					} else {
-						List<ProfileDetails> list = new ArrayList<ProfileDetails>();
-						ProfileDetails details = new ProfileDetails();
+					LOG.info("Container to assess .. {}", associatedContainer);
+					if (!associatedContainer.isRoot() && !associatedContainer.isEnsembleServer()
+							&& associatedContainer.isManaged()) {
+						LOG.info("Container to assessed .. {}", associatedContainer);
+						containers = containers + associatedContainer.getId() + ",";
+						if (containerMap.get(associatedContainer.getId()) != null) {
+							Profiles containerProfiles = containerMap.get(associatedContainer.getId());
+							List<ProfileDetails> list = containerProfiles.getProfileDetails();
+							ProfileDetails details = new ProfileDetails();
+							bundles = profile.getBundles();
+							features = profile.getFeatures();
+							repositories = profile.getRepositories();
+							parents = profile.getParentIds();
+							Collections.sort(bundles);
+							Collections.sort(features);
+							Collections.sort(repositories);
+							details.setBundles(bundles);
+							details.setFeatures(features);
+							details.setParents(parents);
+							details.setRepositories(repositories);
+							details.setProfileName(profileId);
+							details.setProfileVersion(versionId);
+							list.add(details);
+						} else {
+							List<ProfileDetails> list = new ArrayList<ProfileDetails>();
+							ProfileDetails details = new ProfileDetails();
 
-						bundles = profile.getBundles();
-						features = profile.getFeatures();
-						repositories = profile.getRepositories();
-						parents = profile.getParentIds();
-						Collections.sort(bundles);
-						Collections.sort(features);
-						Collections.sort(repositories);
-						details.setBundles(bundles);
-						details.setFeatures(features);
-						details.setParents(parents);
-						details.setRepositories(repositories);
-						details.setProfileName(profileId);
-						details.setProfileVersion(versionId);
+							bundles = profile.getBundles();
+							features = profile.getFeatures();
+							repositories = profile.getRepositories();
+							parents = profile.getParentIds();
+							Collections.sort(bundles);
+							Collections.sort(features);
+							Collections.sort(repositories);
+							details.setBundles(bundles);
+							details.setFeatures(features);
+							details.setParents(parents);
+							details.setRepositories(repositories);
+							details.setProfileName(profileId);
+							details.setProfileVersion(versionId);
 
-						list.add(details);
-						Profiles containerCap = new Profiles();
-						containerCap.setProfileDetails(list);
-						containerMap.put(associatedContainer.getId(), containerCap);
+							list.add(details);
+							Profiles containerCap = new Profiles();
+							containerCap.setProfileDetails(list);
+							containerMap.put(associatedContainer.getId(), containerCap);
+						}
 					}
+
 				}
 			}
 		}
@@ -211,47 +338,10 @@ public class AssociatedContainersAction extends AbstractAction {
 
 	}
 
-	private HashMap<String, Profiles> getOldConfiguration(String oldConfigurationFile,
-			Map<String, Profiles> newConfiguration, PrintStream out) {
-
-		File oldJson = new File(oldConfigurationFile);
-		String AGENT_PID = "io.fabric8.agent";
-		Type profileListType = new TypeToken<HashMap<String, Profiles>>() {
-		}.getType();
-		Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
-
-		BufferedReader bo = null;
-		StringBuffer oldBuffer = new StringBuffer();
-
-		try {
-			bo = new BufferedReader(new FileReader(oldJson));
-			String line = "";
-			while ((line = bo.readLine()) != null) {
-				oldBuffer.append(line);
-			}
-		} catch (Exception e) {
-			out.print(e.getMessage());
-			LOG.error(e.getMessage(), e);
-		}
-		LOG.info(" file Path is {} ", oldConfigurationFile);
-		LOG.info(" file content is {} ", oldBuffer.toString());
-
-		HashMap<String, Profiles> oldConfiguration = null;
-		try {
-			oldConfiguration = gson.fromJson(oldBuffer.toString(), profileListType);
-		} catch (Exception e) {
-			LOG.error(e.getMessage(), e);
-		}
-		LOG.info("The new object is {} :", oldConfiguration);
-		return oldConfiguration;
-
-	}
-
 	private List<EnsembleContainer> getContainersToChange(ProfileService profileService, String oldConfigurationFile,
 			Map<String, Profiles> newConfiguration, PrintStream out) {
 
 		File oldJson = new File(oldConfigurationFile);
-		String AGENT_PID = "io.fabric8.agent";
 		Type profileListType = new TypeToken<HashMap<String, Profiles>>() {
 		}.getType();
 		Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
@@ -292,26 +382,25 @@ public class AssociatedContainersAction extends AbstractAction {
 				List<ProfileDetails> oldProfilesList = oldConfiguration.get(oldEntry.getKey()).getProfileDetails();
 
 				if (newProfilesList == null) {
-					// Scenario where a  container is missing in the new environment
-					// 1. Create the container 
+					// Scenario where a container is missing in the new environment
+					// 1. Create the container
 					// 2. Synch the profiles from old to the new container
 					try {
-						
+
 						LOG.info("name:{}\nparent:root\nzkurl: {}\nzkpassword:{}\njvmopts:{}\nprofiles:{}\nversion: {}",
 								oldEntry.getKey(), fabricService.getZookeeperUrl(),
 								fabricService.getZookeeperPassword(), fabricService.getDefaultJvmOptions(),
-								getProfileNames(oldProfilesList,profileService));
+								getProfileNames(oldProfilesList, profileService));
 
 						CreateChildContainerOptions.Builder builder = CreateChildContainerOptions.builder()
 								.name(oldEntry.getKey()).parent("root").ensembleServer(false)
 								.zookeeperUrl(fabricService.getZookeeperUrl())
 								.zookeeperPassword(fabricService.getZookeeperPassword()).jmxPassword("admin")
 								.jmxUser("admin").version(fabricService.getDefaultVersionId())
-								.jvmOpts(fabricService.getDefaultJvmOptions())
-								.profiles("default");
+								.jvmOpts(fabricService.getDefaultJvmOptions()).profiles("default");
 
 						fabricService.createContainers(builder.build());
-						
+
 						compareAndSynch(oldConfiguration.get(oldEntry.getKey()).getProfileDetails(), oldProfilesList,
 								profileService, fabricService, oldEntry, ensembleDifference, diffContainers);
 
@@ -320,7 +409,7 @@ public class AssociatedContainersAction extends AbstractAction {
 					}
 
 				} else {
-					
+
 					compareAndSynch(newProfilesList, oldProfilesList, profileService, fabricService, oldEntry,
 							ensembleDifference, diffContainers);
 
@@ -330,25 +419,25 @@ public class AssociatedContainersAction extends AbstractAction {
 
 		return ensembleDifference;
 	}
-	
-	private Profile createProfileIfNotPresent(String profileId,Version version,ProfileDetails oldProfileDetails) {
-		
-		Profile profile = version.getProfile( profileId );
-		if(profile == null ) {
-		List<String> profileIds = version.getProfileIds();
-		boolean profileExist = false;
-		if(profileIds!=null && profileIds.size()>0) {
-			profileExist = profileIds.contains(profileId);
-			
-		}
-		if(profileExist) {
-			ProfileBuilder builder = ProfileBuilder.Factory.create(version.getId(),
-					oldProfileDetails.getProfileName());
-			builder.setParents(oldProfileDetails.getParents());
-			builder.setBundles(oldProfileDetails.getBundles());
-			builder.setFeatures(oldProfileDetails.getFeatures());
-			profile = builder.getProfile();
-		}
+
+	private Profile createProfileIfNotPresent(String profileId, Version version, ProfileDetails oldProfileDetails) {
+
+		Profile profile = version.getProfile(profileId);
+		if (profile == null) {
+			List<String> profileIds = version.getProfileIds();
+			boolean profileExist = false;
+			if (profileIds != null && profileIds.size() > 0) {
+				profileExist = profileIds.contains(profileId);
+
+			}
+			if (profileExist) {
+				ProfileBuilder builder = ProfileBuilder.Factory.create(version.getId(),
+						oldProfileDetails.getProfileName());
+				builder.setParents(oldProfileDetails.getParents());
+				builder.setBundles(oldProfileDetails.getBundles());
+				builder.setFeatures(oldProfileDetails.getFeatures());
+				profile = builder.getProfile();
+			}
 		}
 		return profile;
 	}
@@ -356,7 +445,7 @@ public class AssociatedContainersAction extends AbstractAction {
 	private void compareAndSynch(List<ProfileDetails> newProfilesList, List<ProfileDetails> oldProfilesList,
 			ProfileService profileService, FabricService fabricService, Map.Entry<String, Profiles> oldEntry,
 			List<EnsembleContainer> ensembleDifference, StringBuffer diffContainers) {
-		
+
 		for (ProfileDetails newProfileDetails : newProfilesList) {
 			boolean isMatch = false;
 			for (ProfileDetails oldProfileDetails : oldProfilesList) {
@@ -394,32 +483,34 @@ public class AssociatedContainersAction extends AbstractAction {
 						} else {
 							LOG.info("The profile {} does not exist in new env , we will create  profile and add",
 									oldProfileDetails.getProfileName());
-							 Profile createProfile = profileService.createProfile(newProfile);
-							 Profile[] profiles = container.getProfiles();
-							 List<String> profileNames = new ArrayList<String>();
-							 for(Profile profileName:profiles) {
-								 profileNames.add(profileName.getId());
-							 }
-							 
-							 profileNames.add(createProfile.getId());
-							 profileService.updateProfile(createProfile);
-							 
-							 Container cont = FabricCommand.getContainer(fabricService, container.getId());
-						        // we can only change to existing profiles
-						     Profile[] profs = FabricCommand.getExistingProfiles(fabricService, cont.getVersion(), profileNames);
-						     cont.setProfiles(profs);
-							 
+							Profile createProfile = profileService.createProfile(newProfile);
+							Profile[] profiles = container.getProfiles();
+							List<String> profileNames = new ArrayList<String>();
+							for (Profile profileName : profiles) {
+								profileNames.add(profileName.getId());
+							}
+
+							profileNames.add(createProfile.getId());
+							profileService.updateProfile(createProfile);
+
+							Container cont = FabricCommand.getContainer(fabricService, container.getId());
+							// we can only change to existing profiles
+							Profile[] profs = FabricCommand.getExistingProfiles(fabricService, cont.getVersion(),
+									profileNames);
+							cont.setProfiles(profs);
+
 						}
-						
+
 					} else {
 
 						Version requiredVersion = profileService.getVersion(oldProfileDetails.getProfileVersion());
-						LOG.info("Required Version is {} ",requiredVersion);
-						if(requiredVersion == null ) {
+						LOG.info("Required Version is {} ", requiredVersion);
+						if (requiredVersion == null) {
 							requiredVersion = createVersionIfDoesnotExist(oldProfileDetails, profileService);
 						}
-						LOG.info("Retreiveing the required version in which the profile needs to be created {}",oldProfileDetails.getProfileVersion());
-						LOG.info("Required Version is {} ",requiredVersion);
+						LOG.info("Retreiveing the required version in which the profile needs to be created {}",
+								oldProfileDetails.getProfileVersion());
+						LOG.info("Required Version is {} ", requiredVersion);
 						Profile profile = requiredVersion.getProfile(oldProfileDetails.getProfileName());
 						ProfileBuilder builder = ProfileBuilder.Factory.create(requiredVersion.getId(),
 								oldProfileDetails.getProfileName());
@@ -461,7 +552,7 @@ public class AssociatedContainersAction extends AbstractAction {
 				for (ProfileDetails details : oldProfilesList) {
 					profilesAssociated.add(details.getProfileName());
 				}
-				container.setProfiles(profilesAssociated);
+				container.setProfiles(oldProfilesList);
 				ensembleDifference.add(container);
 				diffContainers.append(oldEntry.getKey());
 			}
@@ -469,21 +560,23 @@ public class AssociatedContainersAction extends AbstractAction {
 
 	}
 
-	private Set<String> getProfileNames(List<ProfileDetails> oldProfilesList,ProfileService profileService) {
-		
+	private Set<String> getProfileNames(List<ProfileDetails> oldProfilesList, ProfileService profileService) {
+
 		Set<String> profileNames = new LinkedHashSet<String>();
 		for (ProfileDetails profileDetails : oldProfilesList) {
-			
+
 			Profile requiredProfile = null;
 			try {
-				requiredProfile = profileService.getRequiredProfile(profileDetails.getProfileVersion(), profileDetails.getProfileName());
-			}catch(Exception e) {
-				LOG.error("Profile {} with version {} is not present",profileDetails.getProfileName(),profileDetails.getProfileVersion());
+				requiredProfile = profileService.getRequiredProfile(profileDetails.getProfileVersion(),
+						profileDetails.getProfileName());
+			} catch (Exception e) {
+				LOG.error("Profile {} with version {} is not present", profileDetails.getProfileName(),
+						profileDetails.getProfileVersion());
 			}
-			if(requiredProfile != null ) {
+			if (requiredProfile != null) {
 				profileNames.add(profileDetails.getProfileName());
 			}
-			
+
 		}
 		if (profileNames.size() == 0) {
 			profileNames.add("default");
