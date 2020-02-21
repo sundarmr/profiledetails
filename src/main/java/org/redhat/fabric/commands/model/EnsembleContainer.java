@@ -5,8 +5,21 @@ import java.util.List;
 
 public class EnsembleContainer implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private String containerName;
-	private List<String> profiles;
+	private List<ProfileDetails> profiles;
+	private List<Context> contexts;
+
+	public List<Context> getContexts() {
+		return contexts;
+	}
+
+	public void setContexts(List<Context> contexts) {
+		this.contexts = contexts;
+	}
 
 	public String getContainerName() {
 		return containerName;
@@ -16,11 +29,11 @@ public class EnsembleContainer implements Serializable {
 		this.containerName = containerName;
 	}
 
-	public List<String> getProfiles() {
+	public List<ProfileDetails> getProfiles() {
 		return profiles;
 	}
 
-	public void setProfiles(List<String> profiles) {
+	public void setProfiles(List<ProfileDetails> profiles) {
 		this.profiles = profiles;
 	}
 
@@ -29,6 +42,7 @@ public class EnsembleContainer implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((containerName == null) ? 0 : containerName.hashCode());
+		result = prime * result + ((contexts == null) ? 0 : contexts.hashCode());
 		result = prime * result + ((profiles == null) ? 0 : profiles.hashCode());
 		return result;
 	}
@@ -47,6 +61,11 @@ public class EnsembleContainer implements Serializable {
 				return false;
 		} else if (!containerName.equals(other.containerName))
 			return false;
+		if (contexts == null) {
+			if (other.contexts != null)
+				return false;
+		} else if (!contexts.equals(other.contexts))
+			return false;
 		if (profiles == null) {
 			if (other.profiles != null)
 				return false;
@@ -57,7 +76,8 @@ public class EnsembleContainer implements Serializable {
 
 	@Override
 	public String toString() {
-		return "EnsembleContainer [containerName=" + containerName + ", profiles=" + profiles + "]";
+		return "EnsembleContainer [containerName=" + containerName + ", profiles=" + profiles + ", contexts=" + contexts
+				+ "]";
 	}
 
 }
