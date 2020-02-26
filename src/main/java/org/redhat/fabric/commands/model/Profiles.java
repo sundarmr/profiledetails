@@ -6,6 +6,10 @@ import java.util.List;
 public class Profiles implements Serializable{
 	
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8545269721774637676L;
 	private List<ProfileDetails> profileDetails;
 
 	public List<ProfileDetails> getProfileDetails() {
