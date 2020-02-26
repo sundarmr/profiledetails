@@ -10,7 +10,7 @@
 
 	<groupId>org.redhat.fabric</groupId>
 	<artifactId>profiledetails</artifactId>
-	<version>1.19.17-SNAPSHOT</version>
+	<version>1.20.38-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<dependencies>
 		<dependency>
