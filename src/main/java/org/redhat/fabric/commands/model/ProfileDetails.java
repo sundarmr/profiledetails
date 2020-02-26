@@ -18,7 +18,7 @@ public class ProfileDetails implements Serializable{
 	private List<String> fabs;
 	private List<String> features;
 	private List<String> pids;
-	
+	private Map<String, Map<String, String>> configurations;
 	private Map<String,String> profileConfig ;
 	
 	public String getProfileName() {
@@ -69,6 +69,12 @@ public class ProfileDetails implements Serializable{
 	public void setPids(List<String> pids) {
 		this.pids = pids;
 	}
+	public Map<String, Map<String, String>> getConfigurations() {
+		return configurations;
+	}
+	public void setConfigurations(Map<String, Map<String, String>> configurations) {
+		this.configurations = configurations;
+	}
 	public Map<String, String> getProfileConfig() {
 		return profileConfig;
 	}
@@ -80,6 +86,7 @@ public class ProfileDetails implements Serializable{
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((bundles == null) ? 0 : bundles.hashCode());
+		result = prime * result + ((configurations == null) ? 0 : configurations.hashCode());
 		result = prime * result + ((fabs == null) ? 0 : fabs.hashCode());
 		result = prime * result + ((features == null) ? 0 : features.hashCode());
 		result = prime * result + ((parents == null) ? 0 : parents.hashCode());
@@ -103,6 +110,11 @@ public class ProfileDetails implements Serializable{
 			if (other.bundles != null)
 				return false;
 		} else if (!bundles.equals(other.bundles))
+			return false;
+		if (configurations == null) {
+			if (other.configurations != null)
+				return false;
+		} else if (!configurations.equals(other.configurations))
 			return false;
 		if (fabs == null) {
 			if (other.fabs != null)
@@ -150,7 +162,8 @@ public class ProfileDetails implements Serializable{
 	public String toString() {
 		return "ProfileDetails [profileName=" + profileName + ", profileVersion=" + profileVersion + ", bundles="
 				+ bundles + ", parents=" + parents + ", repositories=" + repositories + ", fabs=" + fabs + ", features="
-				+ features + ", pids=" + pids + ", profileConfig=" + profileConfig + "]";
+				+ features + ", pids=" + pids + ", configurations=" + configurations + ", profileConfig="
+				+ profileConfig + "]";
 	}
 
 }
