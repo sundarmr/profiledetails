@@ -12,6 +12,9 @@ public class EnsembleContainer implements Serializable {
 	private String containerName;
 	private List<ProfileDetails> profiles;
 	private List<Context> contexts;
+	private String version;
+	private String parent;
+	private String envDefaultVersion;
 
 	public List<Context> getContexts() {
 		return contexts;
@@ -37,39 +40,52 @@ public class EnsembleContainer implements Serializable {
 		this.profiles = profiles;
 	}
 
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version;
+	}
+
+	public String getParent() {
+		return parent;
+	}
+
+	public void setParent(String parent) {
+		this.parent = parent;
+	}
+
+	public String getEnvDefaultVersion() {
+		return envDefaultVersion;
+	}
+
+	public void setEnvDefaultVersion(String envDefaultVersion) {
+		this.envDefaultVersion = envDefaultVersion;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((containerName == null) ? 0 : containerName.hashCode());
 		result = prime * result + ((contexts == null) ? 0 : contexts.hashCode());
+		result = prime * result + ((envDefaultVersion == null) ? 0 : envDefaultVersion.hashCode());
+		result = prime * result + ((parent == null) ? 0 : parent.hashCode());
 		result = prime * result + ((profiles == null) ? 0 : profiles.hashCode());
+		result = prime * result + ((version == null) ? 0 : version.hashCode());
 		return result;
 	}
 
+	// Intentional overide of equals to so as to compare only
+	// containernames and not other objects
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
 		if (obj == null)
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		EnsembleContainer other = (EnsembleContainer) obj;
-		if (containerName == null) {
-			if (other.containerName != null)
-				return false;
-		} else if (!containerName.equals(other.containerName))
-			return false;
-		if (contexts == null) {
-			if (other.contexts != null)
-				return false;
-		} else if (!contexts.equals(other.contexts))
-			return false;
-		if (profiles == null) {
-			if (other.profiles != null)
-				return false;
-		} else if (!profiles.equals(other.profiles))
+
+		EnsembleContainer newContainer = (EnsembleContainer) obj;
+		if (!this.containerName.equalsIgnoreCase(newContainer.getContainerName()))
 			return false;
 		return true;
 	}
@@ -77,7 +93,7 @@ public class EnsembleContainer implements Serializable {
 	@Override
 	public String toString() {
 		return "EnsembleContainer [containerName=" + containerName + ", profiles=" + profiles + ", contexts=" + contexts
-				+ "]";
+				+ ", version=" + version + ", parent=" + parent + ", envDefaultVersion=" + envDefaultVersion + "]";
 	}
 
 }
