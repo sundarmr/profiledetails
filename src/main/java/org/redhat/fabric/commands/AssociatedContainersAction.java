@@ -106,7 +106,7 @@ public class AssociatedContainersAction extends AbstractAction {
 			out.print(gson.toJson(ensembleContainerList));
 		}
 
-		else if (filePath != null && !filePath.isEmpty()) {
+		else if (filePath != null && !filePath.isEmpty() && !"only".equalsIgnoreCase(synchContexts)) {
 
 			masterContainerMap = getContainerMap(profileService, versions);
 
@@ -204,9 +204,6 @@ public class AssociatedContainersAction extends AbstractAction {
 	private void addProfiles(Container container, List<String> profileNames) {
 		LOG.debug(container.isProvisioningPending() == true ? " Wait for the container to be provisioned "
 				: "Adding Profiles {}",profileNames);
-		LOG.debug("getProvisionStatus {} ", container.getProvisionStatus());
-		LOG.debug("getProvisionResult {}", container.getProvisionResult());
-		LOG.debug("getProvisionStatusMap {} ", container.getProvisionStatusMap());
 		try {
 			if (container.isProvisioningPending()) {
 				LOG.info("Container is provisioning waiting before retrying to add profile");
@@ -248,7 +245,7 @@ public class AssociatedContainersAction extends AbstractAction {
 	}
 
 	private List<String> getProfileNames(List<ProfileDetails> profileDetails) {
-		LOG.info("Profile size is {}", profileDetails.size());
+		
 		List<String> profiles = new ArrayList<String>();
 		for (ProfileDetails profileDetail : profileDetails) {
 			profiles.add(profileDetail.getProfileName());
@@ -317,10 +314,9 @@ public class AssociatedContainersAction extends AbstractAction {
 			}
 
 			catch (Exception e) {
-				LOG.info("Skipping the response that is error");
+				LOG.info("Skipping the response that is error",e);
 			}
 		}
-		LOG.info("Contexts are : {} ", contexts);
 		return contexts;
 	}
 
@@ -343,10 +339,8 @@ public class AssociatedContainersAction extends AbstractAction {
 				List<String> repositories = null;
 
 				for (Container associatedContainer : associatedContainers) {
-					LOG.info("Container to assess .. {}", associatedContainer);
 					if (!associatedContainer.isRoot() && !associatedContainer.isEnsembleServer()
 							&& associatedContainer.isManaged()) {
-						LOG.info("Container to assessed .. {}", associatedContainer);
 						containers = containers + associatedContainer.getId() + ",";
 						if (containerMap.get(associatedContainer.getId()) != null) {
 							Profiles containerProfiles = containerMap.get(associatedContainer.getId());
@@ -471,8 +465,8 @@ public class AssociatedContainersAction extends AbstractAction {
 		if (requiredVersion == null) {
 			try {
 				String sourceId = profileService.getVersions().get(profileService.getVersions().size() - 1);
-				LOG.info("Parent Version {} ", sourceId);
-				LOG.info("Target Version {} ", productionProfileVersion);
+				LOG.debug("Parent Version {} ", sourceId);
+				LOG.debug("Target Version {} ", productionProfileVersion);
 				if (sourceId != null) {
 					Map<String, String> attributes = new HashMap<String, String>(
 							Collections.singletonMap(Version.PARENT, sourceId));
@@ -547,9 +541,14 @@ public class AssociatedContainersAction extends AbstractAction {
 		LOG.info("The profile {} exists in new env , we will update the existing profile ",
 				oldProfileDetails.getProfileName());
 		createVersionIfDoesnotExist(oldProfileDetails.getProfileVersion(), profileService);
-		Profile newProfile = createProfileIfNotPresent(oldProfileDetails.getProfileName(), requiredVersion,
+		final Profile newProfile = createProfileIfNotPresent(oldProfileDetails.getProfileName(), requiredVersion,
 				oldProfileDetails);
 		profileService.updateProfile(newProfile);
+		addProfiles(container, new ArrayList<String>() {
+			{
+				add(newProfile.getId());
+			}
+		});
 	}
 
 	/*
@@ -565,8 +564,12 @@ public class AssociatedContainersAction extends AbstractAction {
 		Profile newProfile = createProfileIfNotPresent(oldProfileDetails.getProfileName(), requiredVersion,
 				oldProfileDetails);
 		try {
-			Profile createProfile = profileService.createProfile(newProfile);
-			container.addProfiles(createProfile);
+			final Profile createProfile = profileService.createProfile(newProfile);
+			addProfiles(container, new ArrayList<String>() {
+				{
+					add(createProfile.getId());
+				}
+			});
 		} catch (Exception e) {
 			LOG.error("Profile {} not created Successfully {}", newProfile);
 		}
@@ -636,28 +639,24 @@ public class AssociatedContainersAction extends AbstractAction {
 				
 			}
 			Iterator<ProfileDetails> iterator = profilesList.iterator();
-			List<ProfileDetails> newProfilesList = new ArrayList<ProfileDetails>();
+			List<ProfileDetails> newProfilesList = new ArrayList<ProfileDetails>(profilesList);
 
 			while (iterator.hasNext()) {
 				ProfileDetails newProfileDetails = iterator.next();
-				boolean isMatch = false;
 				for (ProfileDetails oldProfileDetails : oldProfilesList) {
 					LOG.info("Comparing for deletion old: {} new : {} ", oldProfileDetails.getProfileName(),
 							newProfileDetails.getProfileName());
 					if (oldProfileDetails.getProfileName().equalsIgnoreCase(newProfileDetails.getProfileName())) {
-						isMatch = true;
+						newProfilesList.add(newProfileDetails);
 					}
 				}
-				if (!isMatch) {
-					newProfilesList.add(newProfileDetails);
-				}
-
 			}
+			
 			LOG.info("New Profiles List {}",newProfilesList);
-			for (ProfileDetails newProfileDetails : newProfilesList) {
-
+			for (ProfileDetails oldProfileDetails : oldProfilesList) {
 				boolean isMatch = false;
-				for (ProfileDetails oldProfileDetails : oldProfilesList) {
+				for (ProfileDetails newProfileDetails : newProfilesList) {
+				
 					Log.debug(" Comparing Profile  oldProfile {} with newProfile {}", oldProfileDetails,
 							newProfileDetails);
 					if (oldProfileDetails.equals(newProfileDetails)) {
@@ -675,7 +674,7 @@ public class AssociatedContainersAction extends AbstractAction {
 						Profile profile = requiredVersion.getProfile(oldProfileDetails.getProfileName());
 						Container container = fabricService.getContainer(oldContainer.getContainerName());
 						if (profile != null) {
-							updateProfile(profileService, oldProfileDetails, requiredVersion, null);
+							updateProfile(profileService, oldProfileDetails, requiredVersion, container);
 						} else {
 							createProfileAndAssociateToContainer(oldProfileDetails, profileService, container,
 									requiredVersion);
