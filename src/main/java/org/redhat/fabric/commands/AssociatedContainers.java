@@ -25,8 +25,6 @@ import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.felix.service.command.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.fabric8.api.FabricService;
 import io.fabric8.api.scr.ValidatingReference;
@@ -39,14 +37,12 @@ import io.fabric8.boot.commands.support.AbstractCommandComponent;
 		@Property(name = "osgi.command.function", value = AssociatedContainers.FUNCTION_VALUE) })
 public class AssociatedContainers extends AbstractCommandComponent {
 
-	private static final Logger LOG = LoggerFactory.getLogger(AssociatedContainers.class);
-
 	public static final String SCOPE_VALUE = "fabric";
 	public static final String FUNCTION_VALUE = "container-profile-list";
 	public static final String DESCRIPTION = "Displays all profiles with associated containers and bundles list , provide an argument for a specific profile";
 	@Reference(referenceInterface = FabricService.class)
 	private final ValidatingReference<FabricService> fabricService = new ValidatingReference<FabricService>();
-
+	
 	@Activate
 	void activate() {
 		activateComponent();
