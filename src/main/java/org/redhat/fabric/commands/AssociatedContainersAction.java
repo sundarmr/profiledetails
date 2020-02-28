@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
@@ -18,16 +19,15 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
 import org.apache.felix.gogo.commands.CompleterValues;
 import org.apache.felix.gogo.commands.Option;
-import org.apache.karaf.shell.console.AbstractAction;
 import org.redhat.fabric.commands.model.Context;
 import org.redhat.fabric.commands.model.EnsembleContainer;
 import org.redhat.fabric.commands.model.ProfileDetails;
@@ -41,7 +41,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import io.fabric8.api.Container;
-import io.fabric8.api.CreateChildContainerOptions;
 import io.fabric8.api.CreateContainerMetadata;
 import io.fabric8.api.FabricService;
 import io.fabric8.api.Profile;
@@ -49,11 +48,14 @@ import io.fabric8.api.ProfileBuilder;
 import io.fabric8.api.ProfileService;
 import io.fabric8.api.Version;
 import io.fabric8.api.VersionBuilder;
+import io.fabric8.api.ZooKeeperClusterService;
+import io.fabric8.boot.commands.support.AbstractContainerCreateAction;
 import io.fabric8.boot.commands.support.FabricCommand;
+import io.fabric8.service.ssh.CreateSshContainerOptions;
 import jline.internal.Log;
 
 @Command(name = AssociatedContainers.FUNCTION_VALUE, scope = AssociatedContainers.SCOPE_VALUE, description = AssociatedContainers.DESCRIPTION)
-public class AssociatedContainersAction extends AbstractAction {
+public class AssociatedContainersAction extends AbstractContainerCreateAction  {
 
 	Logger LOG = LoggerFactory.getLogger(AssociatedContainersAction.class);
 
@@ -66,15 +68,22 @@ public class AssociatedContainersAction extends AbstractAction {
 
 	@Option(name = "--jmxPassword", description = "JmxPassword")
 	private String jmxPassword;
+	
+	@Option(name = "--remoteUser", description = "Remote user in case if we need to create a missing container")
+	private String remoteUser;
 
+	@Option(name = "--remotePassword", description = "Remote user password to ssh to the host")
+	private String remotePassword;
+
+	@Option(name = "--hosts", description = "hosts on which containers need to be created")
+	private List<String> hostsToCreateContainers;
 	
 	@Option(name = "--synchContexts", description = "Should contexts be synched up takes \n 1. true : does synch along with profile synch activity \n2. false : does not synch up contexts \n3. only synchs contexts ")
 	private String synchContexts;
 
-	private final FabricService fabricService;
 
-	public AssociatedContainersAction(FabricService fabricService) {
-		this.fabricService = fabricService;
+	public AssociatedContainersAction(FabricService fabricService, ZooKeeperClusterService zooKeeperClusterService) {
+		super(fabricService, zooKeeperClusterService);
 	}
 
 	public FabricService getFabricService() {
@@ -167,7 +176,6 @@ public class AssociatedContainersAction extends AbstractAction {
 
 	private void synchContexts(List<EnsembleContainer> ensembleContainerList, String filePath, PrintStream out,
 			ProfileService profileService) {
-		LOG.info("Synching up contexts ...{}",ensembleContainerList);
 		List<EnsembleContainer> oldConfiguration = readConfigFile(filePath, out);
 		for (EnsembleContainer newContainer : ensembleContainerList) {
 			if (oldConfiguration.contains(newContainer)) {
@@ -177,20 +185,20 @@ public class AssociatedContainersAction extends AbstractAction {
 					List<ProfileDetails> profiles = oldContainer.getProfiles();
 					Container container = fabricService.getContainer(oldContainer.getContainerName());
 					List<String> profileNames = getProfileNames(profiles);
-					removeProfiles(container, profileNames);
-					addProfiles(container, profileNames);
+					removeProfiles(container, profileNames, true);
+					addProfiles(container, profileNames, true );
 
 				}
 			}
 		}
 	}
 
-	private void removeProfiles(Container container, List<String> profileNames) {
+	private void removeProfiles(Container container, List<String> profileNames,boolean isWaitNeeded) {
 		try {
-			if (container.isProvisioningPending()) {
+			if (container.isProvisioningPending() && isWaitNeeded ) {
 				LOG.info("Container is provisioning waiting before retrying to remove profile");
 				Thread.sleep(6000l);
-				removeProfiles(container, profileNames);
+				removeProfiles(container, profileNames,isWaitNeeded );
 			}
 		} catch (InterruptedException e) {
 		}
@@ -201,14 +209,14 @@ public class AssociatedContainersAction extends AbstractAction {
 		container.removeProfiles(profileIds.toArray(new String[profileIds.size()]));
 	}
 
-	private void addProfiles(Container container, List<String> profileNames) {
+	private void addProfiles(Container container, List<String> profileNames,boolean isWaitNeeded) {
 		LOG.debug(container.isProvisioningPending() == true ? " Wait for the container to be provisioned "
 				: "Adding Profiles {}",profileNames);
 		try {
-			if (container.isProvisioningPending()) {
+			if (container.isProvisioningPending() && isWaitNeeded) {
 				LOG.info("Container is provisioning waiting before retrying to add profile");
 				Thread.sleep(6000l);
-				addProfiles(container, profileNames);
+				addProfiles(container, profileNames,isWaitNeeded);
 			}
 			//Let the container recover from the profile removal and 
 			//fabric service get to know that it has happened.
@@ -406,7 +414,7 @@ public class AssociatedContainersAction extends AbstractAction {
 				LOG.info("Container {} does not exisit attempting to create one {} {} ",
 						oldContainer.getContainerName(), jmxuser, jmxPassword);
 				try {
-					CreateChildContainerOptions.Builder builder = CreateChildContainerOptions.builder()
+				/*	CreateChildContainerOptions.Builder builder = CreateChildContainerOptions.builder()
 							.name(oldContainer.getContainerName())
 							// TODO: what if parent also does not exist
 							// Write a recursive function to get this done ???
@@ -415,10 +423,40 @@ public class AssociatedContainersAction extends AbstractAction {
 							.zookeeperPassword(fabricService.getZookeeperPassword()).jmxPassword(jmxPassword)
 							.jmxUser(jmxuser).version(fabricService.getDefaultVersionId())
 							.jvmOpts(fabricService.getDefaultJvmOptions()).profiles("default");
+							*/
 
-					CreateContainerMetadata[] createContainers = fabricService.createContainers(builder.build());
+					LOG.info(" Address is {} ",InetAddress.getByName("fuse-001.local").getHostAddress());
+					 
+					String pickHost = pickHost(hostsToCreateContainers,oldContainer.getContainerName());
+					String hostAddress = InetAddress.getByName(pickHost).getHostAddress();
+					 
+					 CreateSshContainerOptions.Builder sshBuilder = CreateSshContainerOptions.builder()
+						        .name(oldContainer.getContainerName())
+						        .ensembleServer(isEnsembleServer)
+						        .resolver(resolver)
+						        .bindAddress(bindAddress)
+						        .manualIp(manualIp)
+						        .number(1)
+						        .host(pickHost)
+						        .preferredAddress(hostAddress)
+						        .username(remoteUser)
+						        .password(remotePassword)
+						        .proxyUri(fabricService.getMavenRepoURI())
+						        .zookeeperUrl(fabricService.getZookeeperUrl())
+						        .zookeeperPassword(isEnsembleServer && zookeeperPassword != null ? zookeeperPassword : fabricService.getZookeeperPassword())
+						        .jvmOpts(jvmOpts != null ? jvmOpts : fabricService.getDefaultJvmOptions())
+						        .version(oldContainer.getVersion())
+						        .profiles("default")
+						        .dataStoreProperties(getDataStoreProperties())
+						        .uploadDistribution(true);
 
-					if (displayContainers(createContainers)) {
+
+					CreateContainerMetadata[] createContainers = fabricService.createContainers(sshBuilder.build());
+					
+
+					LOG.info(" Metat data is {}",createContainers);
+					
+					if (checkContainers(createContainers)) {
 						Container container = fabricService.getContainer(oldContainer.getContainerName());
 						compareAndSynch(null, oldContainer.getProfiles(), profileService, oldContainer,
 								ensembleDifference, diffContainers);
@@ -448,6 +486,11 @@ public class AssociatedContainersAction extends AbstractAction {
 		}
 
 		return ensembleDifference;
+	}
+
+	private String pickHost(List<String> hostsToCreateContainers2, String containerName) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	/*
@@ -491,7 +534,7 @@ public class AssociatedContainersAction extends AbstractAction {
 	/*
 	 * to check if the container has been created without any issues
 	 */
-	protected boolean displayContainers(CreateContainerMetadata[] metadatas) {
+	protected boolean checkContainers(CreateContainerMetadata[] metadatas) {
 		boolean isSuccess = false;
 		List<CreateContainerMetadata> success = new ArrayList<CreateContainerMetadata>();
 		List<CreateContainerMetadata> failures = new ArrayList<CreateContainerMetadata>();
@@ -501,6 +544,9 @@ public class AssociatedContainersAction extends AbstractAction {
 		if (success.size() > 0) {
 			isSuccess = true;
 		}
+		LOG.info("Is success {} ",isSuccess);
+		LOG.info("Container container ={}",fabricService.getContainer("container4"));
+				
 		return isSuccess;
 	}
 
@@ -548,7 +594,7 @@ public class AssociatedContainersAction extends AbstractAction {
 			{
 				add(newProfile.getId());
 			}
-		});
+		},false);
 	}
 
 	/*
@@ -558,20 +604,21 @@ public class AssociatedContainersAction extends AbstractAction {
 	public void createProfileAndAssociateToContainer(ProfileDetails oldProfileDetails, ProfileService profileService,
 			Container container, Version requiredVersion) {
 
-		LOG.info("The profile {} does not exist in new env , we will create  profile and add",
-				oldProfileDetails.getProfileName());
+		LOG.info("The profile {} does not exist in new env , we will create  profile and add in version {}",
+				oldProfileDetails.getProfileName(),requiredVersion);
 		createVersionIfDoesnotExist(oldProfileDetails.getProfileVersion(), profileService);
 		Profile newProfile = createProfileIfNotPresent(oldProfileDetails.getProfileName(), requiredVersion,
 				oldProfileDetails);
 		try {
 			final Profile createProfile = profileService.createProfile(newProfile);
+			container.setVersion(requiredVersion);
 			addProfiles(container, new ArrayList<String>() {
 				{
 					add(createProfile.getId());
 				}
-			});
+			},false);
 		} catch (Exception e) {
-			LOG.error("Profile {} not created Successfully {}", newProfile);
+			LOG.error("Profile {} not created Successfully {}", newProfile,e);
 		}
 
 	}
@@ -634,11 +681,11 @@ public class AssociatedContainersAction extends AbstractAction {
 							{
 								add(profileDet.getProfileName());
 							}
-						});
+						},true);
 					}
 				
 			}
-			Iterator<ProfileDetails> iterator = profilesList.iterator();
+			/*Iterator<ProfileDetails> iterator = profilesList.iterator();
 			List<ProfileDetails> newProfilesList = new ArrayList<ProfileDetails>(profilesList);
 
 			while (iterator.hasNext()) {
@@ -650,12 +697,12 @@ public class AssociatedContainersAction extends AbstractAction {
 						newProfilesList.add(newProfileDetails);
 					}
 				}
-			}
+			}*/
 			
-			LOG.info("New Profiles List {}",newProfilesList);
+			LOG.info("New Profiles List {}",profilesList);
 			for (ProfileDetails oldProfileDetails : oldProfilesList) {
 				boolean isMatch = false;
-				for (ProfileDetails newProfileDetails : newProfilesList) {
+				for (ProfileDetails newProfileDetails : profilesList) {
 				
 					Log.debug(" Comparing Profile  oldProfile {} with newProfile {}", oldProfileDetails,
 							newProfileDetails);
@@ -732,4 +779,10 @@ public class AssociatedContainersAction extends AbstractAction {
 		}
 		return oldConfiguration;
 	}
+	
+	//Need to derive logic to associate hostname and containers
+	public String getHost(List<String> hosts,String containerName) {
+		return hosts.get(0);
+	}
+	
 }
