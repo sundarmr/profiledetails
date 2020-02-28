@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 
 import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
@@ -41,6 +40,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import io.fabric8.api.Container;
+import io.fabric8.api.CreateChildContainerOptions;
 import io.fabric8.api.CreateContainerMetadata;
 import io.fabric8.api.FabricService;
 import io.fabric8.api.Profile;
@@ -62,6 +62,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction  {
 	@Argument(index = 0, required = false, name = "filePath", description = "Path to the profile.")
 	@CompleterValues(index = 0)
 	private String filePath;
+	
+	@Option(name = "--child", description = "If missing containers should be child (true ) or ssh (false ) ")
+	private String child;
 
 	@Option(name = "--jmxuser", description = "JmxUser")
 	private String jmxuser;
@@ -75,7 +78,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction  {
 	@Option(name = "--remotePassword", description = "Remote user password to ssh to the host")
 	private String remotePassword;
 
-	@Option(name = "--hosts", description = "hosts on which containers need to be created")
+	@Option(name = "--hosts", description = "hosts on which containers need to be created",multiValued = true)
 	private List<String> hostsToCreateContainers;
 	
 	@Option(name = "--synchContexts", description = "Should contexts be synched up takes \n 1. true : does synch along with profile synch activity \n2. false : does not synch up contexts \n3. only synchs contexts ")
@@ -201,6 +204,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction  {
 				removeProfiles(container, profileNames,isWaitNeeded );
 			}
 		} catch (InterruptedException e) {
+			LOG.error("Unexpected Exception while waiting for container {} to provision",container.getId());
 		}
 		List<String> profileIds = new ArrayList<>();
 		for (Profile profile : FabricCommand.getProfiles(fabricService, container.getVersion(), profileNames)) {
@@ -224,7 +228,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction  {
 			Profile[] profs = FabricCommand.getExistingProfiles(fabricService, container.getVersion(), profileNames);
 			container.setProfiles(profs);
 		} catch (InterruptedException e) {
-
+			LOG.error("Unexpected Exception while waiting for container {} to provision",container.getId());
 		}
 
 	}
@@ -413,8 +417,12 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction  {
 			if (!ensembleContainerList.contains(oldContainer)) {
 				LOG.info("Container {} does not exisit attempting to create one {} {} ",
 						oldContainer.getContainerName(), jmxuser, jmxPassword);
+				
+				CreateContainerMetadata[] createContainers = null;
+				
 				try {
-				/*	CreateChildContainerOptions.Builder builder = CreateChildContainerOptions.builder()
+					if(Boolean.valueOf(child) ){
+					CreateChildContainerOptions.Builder builder = CreateChildContainerOptions.builder()
 							.name(oldContainer.getContainerName())
 							// TODO: what if parent also does not exist
 							// Write a recursive function to get this done ???
@@ -423,13 +431,13 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction  {
 							.zookeeperPassword(fabricService.getZookeeperPassword()).jmxPassword(jmxPassword)
 							.jmxUser(jmxuser).version(fabricService.getDefaultVersionId())
 							.jvmOpts(fabricService.getDefaultJvmOptions()).profiles("default");
-							*/
-
-					LOG.info(" Address is {} ",InetAddress.getByName("fuse-001.local").getHostAddress());
-					 
-					String pickHost = pickHost(hostsToCreateContainers,oldContainer.getContainerName());
+					createContainers = fabricService.createContainers(builder.build());
+							
+					}else {
+					String pickHost = getHost(hostsToCreateContainers,oldContainer.getContainerName());
 					String hostAddress = InetAddress.getByName(pickHost).getHostAddress();
-					 
+					LOG.debug("host is {}",pickHost);
+					LOG.debug(" Address is {} ",InetAddress.getByName(pickHost).getHostAddress());
 					 CreateSshContainerOptions.Builder sshBuilder = CreateSshContainerOptions.builder()
 						        .name(oldContainer.getContainerName())
 						        .ensembleServer(isEnsembleServer)
@@ -449,9 +457,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction  {
 						        .profiles("default")
 						        .dataStoreProperties(getDataStoreProperties())
 						        .uploadDistribution(true);
-
-
-					CreateContainerMetadata[] createContainers = fabricService.createContainers(sshBuilder.build());
+					  createContainers = fabricService.createContainers(sshBuilder.build());
+					}
+					
 					
 
 					LOG.info(" Metat data is {}",createContainers);
@@ -486,11 +494,6 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction  {
 		}
 
 		return ensembleDifference;
-	}
-
-	private String pickHost(List<String> hostsToCreateContainers2, String containerName) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	/*
