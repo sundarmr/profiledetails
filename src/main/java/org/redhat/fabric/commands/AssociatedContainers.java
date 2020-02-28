@@ -27,8 +27,13 @@ import org.apache.felix.scr.annotations.Service;
 import org.apache.felix.service.command.Function;
 
 import io.fabric8.api.FabricService;
+import io.fabric8.api.ZooKeeperClusterService;
 import io.fabric8.api.scr.ValidatingReference;
 import io.fabric8.boot.commands.support.AbstractCommandComponent;
+import io.fabric8.boot.commands.support.ProfileCompleter;
+import io.fabric8.boot.commands.support.ResolverCompleter;
+import io.fabric8.boot.commands.support.VersionCompleter;
+import io.fabric8.commands.support.RootContainerCompleter;
 
 @Component(immediate = true)
 @Service({ Function.class, AbstractCommand.class })
@@ -42,6 +47,18 @@ public class AssociatedContainers extends AbstractCommandComponent {
 	public static final String DESCRIPTION = "Displays all profiles with associated containers and bundles list , provide an argument for a specific profile";
 	@Reference(referenceInterface = FabricService.class)
 	private final ValidatingReference<FabricService> fabricService = new ValidatingReference<FabricService>();
+	
+	@Reference(referenceInterface = ZooKeeperClusterService.class)
+    private final ValidatingReference<ZooKeeperClusterService> clusterService = new ValidatingReference<ZooKeeperClusterService>();
+
+	// Optional Completers
+    @Reference(referenceInterface = ProfileCompleter.class, bind = "bindProfileCompleter", unbind = "unbindProfileCompleter")
+    private ProfileCompleter profileCompleter; // dummy field
+    @Reference(referenceInterface = ResolverCompleter.class, bind = "bindResolverCompleter", unbind = "unbindResolverCompleter")
+    private ResolverCompleter resolverCompleter;
+    @Reference(referenceInterface = VersionCompleter.class, bind = "bindVersionCompleter", unbind = "unbindVersionCompleter")
+    private VersionCompleter versionCompleter; // dummy field
+
 	
 	@Activate
 	void activate() {
@@ -57,7 +74,7 @@ public class AssociatedContainers extends AbstractCommandComponent {
 	@Override
 	public Action createNewAction() {
 		assertValid();
-		return new AssociatedContainersAction(fabricService.get());
+		return new AssociatedContainersAction(fabricService.get(),clusterService.get());
 	}
 	
 
@@ -68,4 +85,45 @@ public class AssociatedContainers extends AbstractCommandComponent {
     void unbindFabricService(FabricService fabricService) {
         this.fabricService.unbind(fabricService);
     }
+    
+    void bindClusterService(ZooKeeperClusterService clusterService) {
+        this.clusterService.bind(clusterService);
+    }
+
+    void unbindClusterService(ZooKeeperClusterService clusterService) {
+        this.clusterService.unbind(clusterService);
+    }
+    
+    void bindRootContainerCompleter(RootContainerCompleter completer) {
+        bindCompleter(completer);
+    }
+
+    void unbindRootContainerCompleter(RootContainerCompleter completer) {
+        unbindCompleter(completer);
+    }
+
+    void bindProfileCompleter(ProfileCompleter completer) {
+        bindOptionalCompleter(completer);
+    }
+
+    void unbindProfileCompleter(ProfileCompleter completer) {
+        unbindOptionalCompleter(completer);
+    }
+
+    void bindResolverCompleter(ResolverCompleter completer) {
+        bindOptionalCompleter(completer);
+    }
+
+    void unbindResolverCompleter(ResolverCompleter completer) {
+        unbindOptionalCompleter(completer);
+    }
+
+    void bindVersionCompleter(VersionCompleter completer) {
+        bindOptionalCompleter(completer);
+    }
+
+    void unbindVersionCompleter(VersionCompleter completer) {
+        unbindOptionalCompleter(completer);
+    }
+
 }
