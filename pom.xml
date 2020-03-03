@@ -10,7 +10,7 @@
 
 	<groupId>org.redhat.fabric</groupId>
 	<artifactId>profiledetails</artifactId>
-	<version>1.20.38-SNAPSHOT</version>
+	<version>1.20.67-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<dependencies>
 		<dependency>
@@ -18,14 +18,34 @@
 			<artifactId>fabric-commands</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>io.fabric8</groupId>
+			<artifactId>fabric-core-agent-ssh</artifactId>
+		</dependency>
+		
+		<dependency>
+			<groupId>io.fabric8</groupId>
+			<artifactId>fabric-utils</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>org.osgi</groupId>
 			<artifactId>org.osgi.core</artifactId>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.servicemix.bundles</groupId>
+			<artifactId>org.apache.servicemix.bundles.commons-httpclient</artifactId>
+			<version>3.1_7</version>
+		</dependency>
+		<dependency>
 			<groupId>org.osgi</groupId>
 			<artifactId>org.osgi.enterprise</artifactId>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient-osgi</artifactId>
+			<version>4.5.1</version>
 		</dependency>
 		<dependency>
 			<groupId>io.fabric8</groupId>
