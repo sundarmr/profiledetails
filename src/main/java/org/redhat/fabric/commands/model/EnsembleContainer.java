@@ -3,6 +3,8 @@ package org.redhat.fabric.commands.model;
 import java.io.Serializable;
 import java.util.List;
 
+import jline.internal.Log;
+
 public class EnsembleContainer implements Serializable {
 
 	/**
@@ -81,14 +83,45 @@ public class EnsembleContainer implements Serializable {
 	// containernames and not other objects
 	@Override
 	public boolean equals(Object obj) {
+		boolean returnValue = false;
 		if (obj == null)
-			return false;
+			return returnValue;
 
 		EnsembleContainer newContainer = (EnsembleContainer) obj;
-		if (!this.containerName.equalsIgnoreCase(newContainer.getContainerName()))
-			return false;
-		return true;
+		String[] thisContainerName = this.containerName.split("_");
+		String[] newContainerName = newContainer.getContainerName().split("_");
+		if(thisContainerName == null || newContainerName == null) {
+			if(this.containerName.equalsIgnoreCase(newContainer.getContainerName()))
+				return true;
+		}
+		for(int i=0;i<thisContainerName.length;i++) {
+			
+			if(thisContainerName[i].equalsIgnoreCase(newContainerName[i]) && i!=2){
+				returnValue = true;
+			}else {
+				returnValue = false;
+			}
+		}
+		
+		return returnValue;
 	}
+	
+	
+	public boolean equals(Object obj,String oldIgnoreValue,String newIgnoreValue) {
+		
+		if (obj == null)
+			return false;
+		EnsembleContainer newContainer = (EnsembleContainer) obj;
+		String thisContainerName = this.containerName.replace(oldIgnoreValue, "");
+		String newContainerName = newContainer.getContainerName().replace(newIgnoreValue,"");
+		Log.info("Old ContainerName: "+thisContainerName);
+		Log.info("New ContainerName: "+newContainerName);
+		if(thisContainerName.equalsIgnoreCase(newContainerName)) 
+				return true;
+		
+		return false;
+	}
+
 
 	@Override
 	public String toString() {
