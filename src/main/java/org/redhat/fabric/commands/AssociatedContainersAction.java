@@ -543,6 +543,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 							}
 						} catch (Exception e) {
 							LOG.error(e.getMessage(), e);
+						}finally {
+							LOG.info("Execution Completed for {}",containerName);
 						}
 
 					}
@@ -562,14 +564,16 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 									break;
 								}
 							}
-						} catch (Exception e) {
-							LOG.error(e.getMessage(), e);
-						}
+						
 						LOG.info("New Container {} ", newContainer);
 						if (newContainer != null)
 							compareAndSynch(newContainer.getProfiles(), oldContainer.getProfiles(), profileService,
 									oldContainer);
-
+						} catch (Exception e) {
+							LOG.error(e.getMessage(), e);
+						} finally {
+							LOG.info("Execution completed for {} ",containerName);
+						}
 					}
 
 				});

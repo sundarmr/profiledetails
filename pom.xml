@@ -7,10 +7,9 @@
 		<artifactId>jboss-parent</artifactId>
 		<version>14</version>
 	</parent>
-
 	<groupId>org.redhat.fabric</groupId>
-	<artifactId>profiledetails</artifactId>
-	<version>1.20.67-SNAPSHOT</version>
+	<artifactId>profiledetails-local</artifactId>
+	<version>2.0.0-Release</version>
 	<packaging>bundle</packaging>
 	<dependencies>
 		<dependency>
@@ -21,21 +20,14 @@
 			<groupId>io.fabric8</groupId>
 			<artifactId>fabric-core-agent-ssh</artifactId>
 		</dependency>
-		
 		<dependency>
 			<groupId>io.fabric8</groupId>
 			<artifactId>fabric-utils</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>org.osgi</groupId>
 			<artifactId>org.osgi.core</artifactId>
 			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.servicemix.bundles</groupId>
-			<artifactId>org.apache.servicemix.bundles.commons-httpclient</artifactId>
-			<version>3.1_7</version>
 		</dependency>
 		<dependency>
 			<groupId>org.osgi</groupId>
@@ -43,23 +35,14 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient-osgi</artifactId>
-			<version>4.5.1</version>
-		</dependency>
-		<dependency>
 			<groupId>io.fabric8</groupId>
 			<artifactId>fabric-api</artifactId>
-
 		</dependency>
 		<dependency>
 			<groupId>io.fabric8</groupId>
 			<artifactId>fabric-boot-commands</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>io.fabric8</groupId>
-			<artifactId>fabric-utils</artifactId>
-		</dependency>
+
 		<dependency>
 			<groupId>io.fabric8</groupId>
 			<artifactId>fabric-zookeeper</artifactId>
@@ -72,31 +55,15 @@
 		<dependency>
 			<groupId>io.fabric8</groupId>
 			<artifactId>fabric-core</artifactId>
-
 		</dependency>
 		<dependency>
 			<groupId>org.jledit</groupId>
 			<artifactId>core</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.karaf.features</groupId>
-			<artifactId>org.apache.karaf.features.core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.karaf.features</groupId>
-			<artifactId>org.apache.karaf.features.command</artifactId>
-		</dependency>
+
 		<dependency>
 			<groupId>org.apache.karaf.shell</groupId>
 			<artifactId>org.apache.karaf.shell.console</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.karaf.shell</groupId>
-			<artifactId>org.apache.karaf.shell.config</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.karaf.shell</groupId>
-			<artifactId>org.apache.karaf.shell.ssh</artifactId>
 		</dependency>
 
 		<!-- Provided Dependencies -->
@@ -105,11 +72,7 @@
 			<artifactId>org.apache.felix.scr.annotations</artifactId>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.servicemix.bundles</groupId>
-			<artifactId>org.apache.servicemix.bundles.jsch</artifactId>
-			<scope>provided</scope>
-		</dependency>
+
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -124,31 +87,23 @@
 			<artifactId>slf4j-log4j12</artifactId>
 			<scope>test</scope>
 		</dependency>
-
-
-
-
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
 				<groupId>org.jboss.fuse.bom</groupId>
 				<artifactId>jboss-fuse-parent</artifactId>
-				<version>6.3.0.redhat-187</version>
+				<version>6.3.0.redhat-416</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-	<distributionManagement>
-		<repository>
-			<id>jboss-releases-repository</id>
-			<name>JBoss Releases Repository</name>
-			<url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2</url>
-		</repository>
-	</distributionManagement>
+	<!-- Please substitute with your distribution repo's <distributionManagement> 
+		<repository> <id>jboss-releases-repository</id> <name>JBoss Releases Repository</name> 
+		<url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2</url> 
+		</repository> </distributionManagement> -->
 	<build>
-
 		<plugins>
 			<plugin>
 				<groupId>org.apache.felix</groupId>
@@ -170,8 +125,15 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+
 		</plugins>
-
 	</build>
-
 </project>

@@ -1,9 +1,15 @@
 package org.redhat.fabric.commands.model;
 
+import java.io.Serializable;
+
 import com.google.gson.annotations.SerializedName;
 
-public class Context {
+public class Context implements Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3924161041891018839L;
 	@SerializedName("CamelId")
 	private String contextId;
 	@SerializedName("TotalRoutes")
