@@ -13,16 +13,16 @@ The above command will print out a json string with all the container details
   * State of the route
   
   `container-profile-synch --jmxuser <username> --jmxPassword <password> --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts false --child <true/false> --oldIdentified <sourcesytemnamingstring> --newIdentifier <targetsystemnamingstring> --hosts <remotehostname> <filePath>`
-  
-  The above command will read the file from filepath and apply the configurations to the target environments and synch up the ensemble to resemble the source configuration
+
+The above command will read the file from filepath and apply the configurations to the target environments and synch up the ensemble to resemble the source configuration
   
  * Will Create New containers if missing in targe
  * Will create / update the profiles to reflect the source system profiles
  * Will synch up associations of the containers and profiles
 
    `container-profile-synch --jmxuser <username> --jmxPassword <password> --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts only --child <true/false> --oldIdentified <sourcesytemnamingstring> --newIdentifier <targetsystemnamingstring> --hosts <remotehostname> <filePath>`
-  
-  The above command will read the file from filepath and apply the configurations to the target environments and synch up the ensemble to resemble the source configuration
+
+The above command will read the file from filepath and apply the configurations to the target environments and synch up the ensemble to resemble the source configuration
   
  * Will synch up camel contexts in the target environment to reflect source
  * Will try to start up the contexts where possible
