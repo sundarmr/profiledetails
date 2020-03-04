@@ -115,7 +115,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			add("support-base");
 			add("jboss-fuse-minimal");
 			add("jboss-fuse-full");
-			
+
 		}
 	};
 
@@ -172,7 +172,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		else if (filePath != null && !filePath.isEmpty() && !"only".equalsIgnoreCase(synchContexts)) {
 
 			masterContainerMap = getContainerMap(profileService, versions);
-			LOG.info("Master Container Map {} ",masterContainerMap);
+			LOG.info("Master Container Map {} ", masterContainerMap);
 			List<EnsembleContainer> ensembleContainerList = new ArrayList<EnsembleContainer>();
 
 			for (Map.Entry<String, Profiles> containerMap : masterContainerMap.entrySet()) {
@@ -182,7 +182,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				ensembleContainer.setProfiles(containerMap.getValue().getProfileDetails());
 				ensembleContainerList.add(ensembleContainer);
 			}
-			LOG.info("Master Container Map {} ",ensembleContainerList);
+			LOG.info("Master Container Map {} ", ensembleContainerList);
 			try {
 				getContainersToChange(profileService, filePath, ensembleContainerList, out);
 			} catch (Exception e) {
@@ -284,14 +284,15 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	private Map<String, Profiles> getContainerMap(ProfileService profileService, List<String> versions) {
 
 		Map<String, Profiles> masterContainerMap = new HashMap<String, Profiles>();
-		LOG.info("Versions {} ",versions);
+		LOG.info("Versions {} ", versions);
 		for (String versionId : versions) {
-			
+
 			Version requiredVersion = profileService.getRequiredVersion(versionId);
 			List<Profile> availableProfiles = requiredVersion.getProfiles();
-			
-			Map<String, Profiles> containerMap = printProfiles(profileService, sortProfiles(availableProfiles), System.out, versionId);
-			
+
+			Map<String, Profiles> containerMap = printProfiles(profileService, sortProfiles(availableProfiles),
+					System.out, versionId);
+
 			for (Entry<String, Profiles> entrySet : containerMap.entrySet()) {
 				if (masterContainerMap.containsKey(entrySet.getKey())) {
 					Profiles associatedProfiles = masterContainerMap.get(entrySet.getKey());
@@ -302,7 +303,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 					masterContainerMap.put(entrySet.getKey(), entrySet.getValue());
 				}
 			}
-			LOG.info("Master Container Map {}",masterContainerMap);
+			LOG.info("Master Container Map {}", masterContainerMap);
 		}
 		return masterContainerMap;
 	}
@@ -395,7 +396,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			// skip profiles that do not exists (they may have been deleted)
 			if (profileService.hasProfile(versionId, profileId)) {
 				Container[] associatedContainers = fabricService.getAssociatedContainers(versionId, profileId);
-				
+
 				String containers = "";
 				List<String> bundles = null;
 				List<String> features = null;
@@ -403,8 +404,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				List<String> repositories = null;
 
 				for (Container associatedContainer : associatedContainers) {
-					if ( !associatedContainer.isEnsembleServer()
-							&& associatedContainer.isManaged()) {
+					if (!associatedContainer.isEnsembleServer() && associatedContainer.isManaged()) {
 						containers = containers + associatedContainer.getId() + ",";
 						if (containerMap.get(associatedContainer.getId()) != null) {
 							Profiles containerProfiles = containerMap.get(associatedContainer.getId());
@@ -467,17 +467,18 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			throw e;
 		}
 		ExecutorService executorService = Executors.newFixedThreadPool(noOfThreads);
-		LOG.info("Old Configuration {}",oldConfiguration);
+
+		LOG.debug("Old Configuration {}", oldConfiguration);
+
 		for (final EnsembleContainer oldContainer : oldConfiguration) {
-			
+
 			final String containerName = getContainerName(oldContainer.getContainerName());
-			
+
 			boolean containerExists = false;
 			try {
 				containerExists = fabricService.getContainer(containerName) == null ? false : true;
-				LOG.info("container exists is {}",containerExists);
 			} catch (Exception e) {
-				LOG.error(e.getMessage());
+				LOG.warn("Container does not exist {}", containerName);
 			}
 			if (!containerExists) {
 
@@ -546,8 +547,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 					}
 				});
-			} 
-			else {
+			} else {
 				LOG.info("Synching existing container {} ", containerName);
 				executorService.submit(new Runnable() {
 
