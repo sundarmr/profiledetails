@@ -43,7 +43,7 @@ import io.fabric8.commands.support.RootContainerCompleter;
 public class AssociatedContainers extends AbstractCommandComponent {
 
 	public static final String SCOPE_VALUE = "fabric";
-	public static final String FUNCTION_VALUE = "container-profile-list";
+	public static final String FUNCTION_VALUE = "container-profile-synch";
 	public static final String DESCRIPTION = "Displays all profiles with associated containers and bundles list , provide an argument for a specific profile";
 	@Reference(referenceInterface = FabricService.class)
 	private final ValidatingReference<FabricService> fabricService = new ValidatingReference<FabricService>();
@@ -58,6 +58,7 @@ public class AssociatedContainers extends AbstractCommandComponent {
     private ResolverCompleter resolverCompleter;
     @Reference(referenceInterface = VersionCompleter.class, bind = "bindVersionCompleter", unbind = "unbindVersionCompleter")
     private VersionCompleter versionCompleter; // dummy field
+ 
 
 	
 	@Activate
@@ -102,13 +103,6 @@ public class AssociatedContainers extends AbstractCommandComponent {
         unbindCompleter(completer);
     }
 
-    void bindProfileCompleter(ProfileCompleter completer) {
-        bindOptionalCompleter(completer);
-    }
-
-    void unbindProfileCompleter(ProfileCompleter completer) {
-        unbindOptionalCompleter(completer);
-    }
 
     void bindResolverCompleter(ResolverCompleter completer) {
         bindOptionalCompleter(completer);
@@ -118,12 +112,22 @@ public class AssociatedContainers extends AbstractCommandComponent {
         unbindOptionalCompleter(completer);
     }
 
+  
+   
+    void bindProfileCompleter(ProfileCompleter completer) {
+        bindCompleter(completer);
+    }
+
+    void unbindProfileCompleter(ProfileCompleter completer) {
+        unbindCompleter(completer);
+    }
+
     void bindVersionCompleter(VersionCompleter completer) {
-        bindOptionalCompleter(completer);
+        bindCompleter(completer);
     }
 
     void unbindVersionCompleter(VersionCompleter completer) {
-        unbindOptionalCompleter(completer);
+        unbindCompleter(completer);
     }
 
 }
