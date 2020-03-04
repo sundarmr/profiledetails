@@ -98,6 +98,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	private String privateKeyFile;
 	@Option(name = "--pass-phrase", description = "The pass phrase of the key. This is for use with private keys that require a pass phrase.")
 	private String passPhrase;
+	@Option(name = "--noOfThreads", description = "No of threads to execute")
+
+	private int noOfThreads = 10;
 
 	static final List<String> ignoreProfiles = new ArrayList<String>() {
 		{
@@ -463,7 +466,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		} catch (FileNotFoundException e) {
 			throw e;
 		}
-		ExecutorService executorService = Executors.newFixedThreadPool(1);
+		ExecutorService executorService = Executors.newFixedThreadPool(noOfThreads);
 		LOG.info("Old Configuration {}",oldConfiguration);
 		for (final EnsembleContainer oldContainer : oldConfiguration) {
 			
@@ -571,9 +574,6 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 				});
 			}
-
-			// } // internal for end
-
 		}
 	}
 
