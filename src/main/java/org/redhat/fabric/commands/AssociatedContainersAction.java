@@ -1,11 +1,14 @@
+
 package org.redhat.fabric.commands;
 
 import static io.fabric8.commands.support.CommandUtils.sortProfiles;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -20,9 +23,13 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,8 +37,10 @@ import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
 import org.apache.felix.gogo.commands.CompleterValues;
 import org.apache.felix.gogo.commands.Option;
+import org.apache.mina.util.ConcurrentHashSet;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Color;
+import org.jledit.command.editor.NewLineCommand;
 import org.redhat.fabric.commands.model.Context;
 import org.redhat.fabric.commands.model.EnsembleContainer;
 import org.redhat.fabric.commands.model.ProfileDetails;
@@ -96,11 +105,15 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 	@Option(name = "--private-key", description = "The path to the private key on the filesystem. Default is ~/.ssh/id_rsa on *NIX platforms or C:\\Documents and Settings\\<UserName>\\.ssh\\id_rsa on Windows.")
 	private String privateKeyFile;
+
 	@Option(name = "--pass-phrase", description = "The pass phrase of the key. This is for use with private keys that require a pass phrase.")
 	private String passPhrase;
-	@Option(name = "--noOfThreads", description = "No of threads to execute")
 
+	@Option(name = "--noOfThreads", description = "No of threads to execute")
 	private int noOfThreads = 10;
+
+	@Option(name = "--storeFile", description = "Path to write the config file defaults to /tmp/config.json")
+	private String storeFile = "/tmp/config.json";
 
 	static final List<String> ignoreProfiles = new ArrayList<String>() {
 		{
@@ -153,35 +166,33 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 					.fg(Ansi.Color.DEFAULT).toString());
 		}
 		if (filePath == null) {
-
-			masterContainerMap = getContainerMap(profileService, versions);
-
-			List<EnsembleContainer> ensembleContainerList = new ArrayList<EnsembleContainer>();
-
-			for (Map.Entry<String, Profiles> containerMap : masterContainerMap.entrySet()) {
-				EnsembleContainer ensembleContainer = new EnsembleContainer();
-				ensembleContainer.setContainerName(containerMap.getKey());
-				ensembleContainer.setContexts(getContextList(out, fabricService.getContainer(containerMap.getKey())));
-				ensembleContainer.setProfiles(containerMap.getValue().getProfileDetails());
-				ensembleContainerList.add(ensembleContainer);
+			long currentTimeMillis = System.currentTimeMillis();
+			HashSet<EnsembleContainer> ensembleContainerList = getContainerMap(profileService, versions);
+			Type profileListType = new TypeToken<HashSet<EnsembleContainer>>() {
+			}.getType();
+			String configString = gson.toJson(ensembleContainerList);
+			if (storeFile != null) {
+				try {
+					File file = new File(storeFile);
+					BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+					writer.write(gson.toJson(ensembleContainerList, profileListType));
+					writer.close();
+					file.setReadable(true, false);
+					LOG.info("Config Written to file {} ", storeFile);
+				} catch (Exception e) {
+					out.print(e.getMessage());
+				}
+			} else {
+				out.print(configString);
 			}
-
-			out.print(gson.toJson(ensembleContainerList));
+			long timeAfter = System.currentTimeMillis();
+			LOG.info("Execution time is {}", (timeAfter - currentTimeMillis) / 1000);
 		}
 
 		else if (filePath != null && !filePath.isEmpty() && !"only".equalsIgnoreCase(synchContexts)) {
 
-			masterContainerMap = getContainerMap(profileService, versions);
-			LOG.info("Master Container Map {} ", masterContainerMap);
-			List<EnsembleContainer> ensembleContainerList = new ArrayList<EnsembleContainer>();
+			HashSet<EnsembleContainer> ensembleContainerList = getContainerMap(profileService, versions);
 
-			for (Map.Entry<String, Profiles> containerMap : masterContainerMap.entrySet()) {
-				EnsembleContainer ensembleContainer = new EnsembleContainer();
-				ensembleContainer.setContainerName(containerMap.getKey());
-				ensembleContainer.setContexts(getContextList(out, fabricService.getContainer(containerMap.getKey())));
-				ensembleContainer.setProfiles(containerMap.getValue().getProfileDetails());
-				ensembleContainerList.add(ensembleContainer);
-			}
 			LOG.info("Master Container Map {} ", ensembleContainerList);
 			try {
 				getContainersToChange(profileService, filePath, ensembleContainerList, out);
@@ -195,23 +206,15 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			}
 
 		} else if ("only".equalsIgnoreCase(synchContexts)) {
+
 			LOG.info("Synching up Contexts.....");
 			if (filePath == null || jmxuser == null || jmxPassword == null) {
 				out.print("Input configuration file path , jmxuser or jxmpassword is missing");
 				System.exit(0);
 			}
 
-			masterContainerMap = getContainerMap(profileService, versions);
+			HashSet<EnsembleContainer> ensembleContainerList = getContainerMap(profileService, versions);
 
-			List<EnsembleContainer> ensembleContainerList = new ArrayList<EnsembleContainer>();
-
-			for (Map.Entry<String, Profiles> containerMap : masterContainerMap.entrySet()) {
-				EnsembleContainer ensembleContainer = new EnsembleContainer();
-				ensembleContainer.setContainerName(containerMap.getKey());
-				ensembleContainer.setContexts(getContextList(out, fabricService.getContainer(containerMap.getKey())));
-				ensembleContainer.setProfiles(containerMap.getValue().getProfileDetails());
-				ensembleContainerList.add(ensembleContainer);
-			}
 			synchContexts(ensembleContainerList, filePath, out, profileService);
 		}
 
@@ -220,7 +223,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		return null;
 	}
 
-	private void synchContexts(List<EnsembleContainer> ensembleContainerList, String filePath, PrintStream out,
+	private void synchContexts(HashSet<EnsembleContainer> ensembleContainerList, String filePath, PrintStream out,
 			ProfileService profileService) throws FileNotFoundException {
 		List<EnsembleContainer> oldConfiguration = null;
 		try {
@@ -233,7 +236,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				EnsembleContainer oldContainer = oldConfiguration.get(oldConfiguration.indexOf(newContainer));
 				if (!oldContainer.getContexts().equals(newContainer.getContexts())) {
 					LOG.info("reloading profiles....");
-					List<ProfileDetails> profiles = oldContainer.getProfiles();
+					ConcurrentHashSet<ProfileDetails> profiles = oldContainer.getProfiles();
 					Container container = fabricService.getContainer(getContainerName(oldContainer.getContainerName()));
 					List<String> profileNames = getProfileNames(profiles);
 					removeProfiles(container, profileNames, true);
@@ -281,34 +284,54 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 	}
 
-	private Map<String, Profiles> getContainerMap(ProfileService profileService, List<String> versions) {
+	private HashSet<EnsembleContainer> getContainerMap(final ProfileService profileService, List<String> versions) {
 
-		Map<String, Profiles> masterContainerMap = new HashMap<String, Profiles>();
-		LOG.info("Versions {} ", versions);
-		for (String versionId : versions) {
+		final Map<String, Profiles> masterContainerMap = new HashMap<String, Profiles>();
 
-			Version requiredVersion = profileService.getRequiredVersion(versionId);
-			List<Profile> availableProfiles = requiredVersion.getProfiles();
+		final HashSet<EnsembleContainer> ensembleContainers = new HashSet<EnsembleContainer>();
 
-			Map<String, Profiles> containerMap = printProfiles(profileService, sortProfiles(availableProfiles),
-					System.out, versionId);
+		ExecutorService versionExecutor = Executors.newFixedThreadPool(versions.size());
+		final CountDownLatch latch = new CountDownLatch(versions.size());
 
-			for (Entry<String, Profiles> entrySet : containerMap.entrySet()) {
-				if (masterContainerMap.containsKey(entrySet.getKey())) {
-					Profiles associatedProfiles = masterContainerMap.get(entrySet.getKey());
-					associatedProfiles.getProfileDetails()
-							.addAll(containerMap.get(entrySet.getKey()).getProfileDetails());
+		for (final String versionId : versions) {
 
-				} else {
-					masterContainerMap.put(entrySet.getKey(), entrySet.getValue());
+			versionExecutor.submit(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Version requiredVersion = profileService.getRequiredVersion(versionId);
+						List<Profile> availableProfiles = requiredVersion.getProfiles();
+						printProfiles(profileService, sortProfiles(availableProfiles), System.out, versionId,
+								ensembleContainers);
+						/*
+						 * for (Entry<String, Profiles> entrySet : containerMap.entrySet()) {
+						 * 
+						 * if (masterContainerMap.containsKey(entrySet.getKey())) { Profiles
+						 * associatedProfiles = masterContainerMap.get(entrySet.getKey());
+						 * associatedProfiles.getProfileDetails()
+						 * .addAll(containerMap.get(entrySet.getKey()).getProfileDetails());
+						 * 
+						 * } else { masterContainerMap.put(entrySet.getKey(), entrySet.getValue()); } }
+						 */
+					} finally {
+						LOG.info("Completed Processing version {} {}", versionId, latch);
+						latch.countDown();
+					}
+
 				}
-			}
-			LOG.info("Master Container Map {}", masterContainerMap);
+			});
 		}
-		return masterContainerMap;
+		try {
+			LOG.info("Waiting for the latch");
+			latch.await();
+			versionExecutor.shutdown();
+		} catch (InterruptedException e) {
+			LOG.error("Thread intterupted", e);
+		}
+		return ensembleContainers;
 	}
 
-	private List<String> getProfileNames(List<ProfileDetails> profileDetails) {
+	private List<String> getProfileNames(ConcurrentHashSet<ProfileDetails> profileDetails) {
 
 		List<String> profiles = new ArrayList<String>();
 		for (ProfileDetails profileDetail : profileDetails) {
@@ -320,10 +343,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		return profiles;
 	}
 
-	private List<Context> getContextList(PrintStream out, Container container) {
+	private HashSet<Context> getContextList(PrintStream out, Container container) {
 
 		Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
-		List<Context> contexts = new ArrayList<Context>();
+		HashSet<Context> contexts = new HashSet<Context>();
 		StringBuilder sb = new StringBuilder();
 
 		if (container.isAlive() && !container.isEnsembleServer() && container.isManaged()) {
@@ -332,15 +355,13 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				sb.delete(0, sb.toString().length() - 1);
 			}
 			String jolokiaUrl = container.getJolokiaUrl();
-			jolokiaUrl = jolokiaUrl.replace("MacBook-Pro", "localhost");
-
 			URL url = null;
 			HttpURLConnection connection = null;
 			try {
 				url = new URL((new StringBuilder(jolokiaUrl).append(
 						"/read/org.apache.camel:context=*,type=context,name=*/TotalRoutes,CamelId,State,StartedRoutes"))
 								.toString());
-				LOG.info("Invoking url : {} ", url);
+
 				connection = (HttpURLConnection) url.openConnection();
 				String auth = jmxuser + ":" + jmxPassword;
 				byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
@@ -359,106 +380,141 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 				}
 				JsonObject fromJson = gson.fromJson(sb.toString(), JsonObject.class);
-				JsonObject asJsonObject = fromJson.get("value").getAsJsonObject();
+				JsonObject asJsonObject = null;
+				if (fromJson.get("value") != null) {
+					asJsonObject = fromJson.get("value").getAsJsonObject();
 
-				Type profileListType = new TypeToken<HashMap<String, Context>>() {
-				}.getType();
+					Type profileListType = new TypeToken<HashMap<String, Context>>() {
+					}.getType();
 
-				HashMap<String, Context> fromJson2 = gson.fromJson(asJsonObject.toString(), profileListType);
+					HashMap<String, Context> fromJson2 = gson.fromJson(asJsonObject.toString(), profileListType);
 
-				for (Map.Entry<String, Context> actualEntries : fromJson2.entrySet()) {
-					contexts.add(actualEntries.getValue());
+					for (Map.Entry<String, Context> actualEntries : fromJson2.entrySet()) {
+						contexts.add(actualEntries.getValue());
+					}
 				}
+				connection.disconnect();
 			} catch (MalformedURLException e1) {
 				LOG.error("Unable to connect to container ...{}", container.getId());
 			} catch (ProtocolException e1) {
 				LOG.error("Unable to connect to container ...{}", container.getId());
 			} catch (IOException e) {
 				LOG.error("Unable to connect to container ...{}", container.getId());
-			}
-
-			catch (Exception e) {
+			} catch (Exception e) {
 				LOG.info("Skipping the response that is error", e.getMessage());
 			}
 		}
 		return contexts;
 	}
 
-	protected Map<String, Profiles> printProfiles(ProfileService profileService, List<Profile> profiles,
-			PrintStream out, String versionId) {
+	private void printProfiles(final ProfileService profileService, final List<Profile> profiles, final PrintStream out,
+			final String versionId, final HashSet<EnsembleContainer> ensembleContainers) {
+		ConcurrentHashMap concurrentHashMap = new ConcurrentHashMap<>();
+		final Set<EnsembleContainer> newKeySet = ConcurrentHashMap.newKeySet();
+		final Map<String, Profiles> containerMap = new HashMap<String, Profiles>();
+		LOG.info("version {} profile size {}", versionId, profiles.size());
+		ExecutorService profileExecutor = Executors.newFixedThreadPool(Math.round(profiles.size() / 10));
+		final CountDownLatch profileLatch = new CountDownLatch(profiles.size());
+		final HashSet<String> processedContainers = new HashSet<String>();
+		for (final Profile profile : profiles) {
+			profileExecutor.execute(new Runnable() {
+				@Override
+				public void run() {
+					try {
 
-		Map<String, Profiles> containerMap = new HashMap<String, Profiles>();
+						String profileId = profile.getId();
+						// skip profiles that do not exists (they may have been deleted)
+						if (profileService.hasProfile(versionId, profileId)) {
 
-		for (Profile profile : profiles) {
+							Container[] associatedContainers = fabricService.getAssociatedContainers(versionId,
+									profileId);
+							HashSet<String> bundles = null;
+							HashSet<String> features = null;
+							HashSet<String> parents = null;
+							HashSet<String> repositories = null;
 
-			String profileId = profile.getId();
+							for (Container associatedContainer : associatedContainers) {
 
-			// skip profiles that do not exists (they may have been deleted)
-			if (profileService.hasProfile(versionId, profileId)) {
-				Container[] associatedContainers = fabricService.getAssociatedContainers(versionId, profileId);
+								if (!associatedContainer.isEnsembleServer() && associatedContainer.isManaged()) {
+									if (containerMap.get(associatedContainer.getId()) != null) {
+										Profiles containerProfiles = containerMap.get(associatedContainer.getId());
+										ConcurrentHashSet<ProfileDetails> list = containerProfiles.getProfileDetails();
+										ProfileDetails details = new ProfileDetails();
+										bundles = new HashSet<String>(profile.getBundles());
+										features = new HashSet<String>(profile.getFeatures());
+										repositories = new HashSet<String>(profile.getRepositories());
+										parents = new HashSet<String>(profile.getParentIds());
 
-				String containers = "";
-				List<String> bundles = null;
-				List<String> features = null;
-				List<String> parents = null;
-				List<String> repositories = null;
+										details.setBundles(bundles);
+										details.setFeatures(features);
+										details.setParents(parents);
+										details.setRepositories(repositories);
+										details.setProfileName(profileId);
+										details.setProfileVersion(versionId);
+										list.add(details);
+									} else {
+										ConcurrentHashSet<ProfileDetails> list = new ConcurrentHashSet<ProfileDetails>();
+										ProfileDetails details = new ProfileDetails();
 
-				for (Container associatedContainer : associatedContainers) {
-					if (!associatedContainer.isEnsembleServer() && associatedContainer.isManaged()) {
-						containers = containers + associatedContainer.getId() + ",";
-						if (containerMap.get(associatedContainer.getId()) != null) {
-							Profiles containerProfiles = containerMap.get(associatedContainer.getId());
-							List<ProfileDetails> list = containerProfiles.getProfileDetails();
-							ProfileDetails details = new ProfileDetails();
-							bundles = profile.getBundles();
-							features = profile.getFeatures();
-							repositories = profile.getRepositories();
-							parents = profile.getParentIds();
-							Collections.sort(bundles);
-							Collections.sort(features);
-							Collections.sort(repositories);
-							details.setBundles(bundles);
-							details.setFeatures(features);
-							details.setParents(parents);
-							details.setRepositories(repositories);
-							details.setProfileName(profileId);
-							details.setProfileVersion(versionId);
-							list.add(details);
-						} else {
-							List<ProfileDetails> list = new ArrayList<ProfileDetails>();
-							ProfileDetails details = new ProfileDetails();
+										bundles = new HashSet<String>(profile.getBundles());
+										features = new HashSet<String>(profile.getFeatures());
+										repositories = new HashSet<String>(profile.getRepositories());
+										parents = new HashSet<String>(profile.getParentIds());
 
-							bundles = profile.getBundles();
-							features = profile.getFeatures();
-							repositories = profile.getRepositories();
-							parents = profile.getParentIds();
-							Collections.sort(bundles);
-							Collections.sort(features);
-							Collections.sort(repositories);
-							details.setBundles(bundles);
-							details.setFeatures(features);
-							details.setParents(parents);
-							details.setRepositories(repositories);
-							details.setProfileName(profileId);
-							details.setProfileVersion(versionId);
+										details.setBundles(bundles);
+										details.setFeatures(features);
+										details.setParents(parents);
+										details.setRepositories(repositories);
+										details.setProfileName(profileId);
+										details.setProfileVersion(versionId);
 
-							list.add(details);
-							Profiles containerCap = new Profiles();
-							containerCap.setProfileDetails(list);
-							containerMap.put(associatedContainer.getId(), containerCap);
+										list.add(details);
+										Profiles containerCap = new Profiles();
+										containerCap.setProfileDetails(list);
+										containerMap.put(associatedContainer.getId(), containerCap);
+									}
+								}
+								processedContainers.add(associatedContainer.getId());
+								EnsembleContainer container = new EnsembleContainer();
+								if (containerMap.get(associatedContainer.getId()) != null) {
+									container.setContainerName(associatedContainer.getId());
+									container.setProfiles(
+											containerMap.get(associatedContainer.getId()).getProfileDetails());
+									container.setParent(associatedContainer.getParent() != null
+											? associatedContainer.getParent().getId()
+											: null);
+									container.setVersion(associatedContainer.getVersionId());
+									if (!processedContainers.contains(container.getContainerName())) {
+										container.setContexts(getContextList(out, associatedContainer));
+									}
+									container.setEnvDefaultVersion(fabricService.getDefaultVersionId());
+									newKeySet.add(container);
+								}
+							}
 						}
+
+					} finally {
+						LOG.info("Completed processing for profile {} {}", profile, profileLatch);
+						profileLatch.countDown();
 					}
 
 				}
-			}
+			});
 		}
-
-		return containerMap;
-
+		try {
+			profileLatch.await();
+			profileExecutor.shutdown();
+		} catch (Exception e) {
+			LOG.error(e.getMessage(), e);
+		}
+		Iterator<EnsembleContainer> iterator = newKeySet.iterator();
+		while (iterator.hasNext())
+			ensembleContainers.add(iterator.next());
 	}
 
 	public void getContainersToChange(final ProfileService profileService, final String oldConfigurationFile,
-			final List<EnsembleContainer> ensembleContainerList, final PrintStream out) throws FileNotFoundException {
+			final HashSet<EnsembleContainer> ensembleContainerList, final PrintStream out)
+			throws FileNotFoundException {
 
 		List<EnsembleContainer> oldConfiguration = null;
 		try {
@@ -543,8 +599,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 							}
 						} catch (Exception e) {
 							LOG.error(e.getMessage(), e);
-						}finally {
-							LOG.info("Execution Completed for {}",containerName);
+						} finally {
+							LOG.info("Execution Completed for {}", containerName);
 						}
 
 					}
@@ -564,15 +620,15 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 									break;
 								}
 							}
-						
-						LOG.info("New Container {} ", newContainer);
-						if (newContainer != null)
-							compareAndSynch(newContainer.getProfiles(), oldContainer.getProfiles(), profileService,
-									oldContainer);
+
+							LOG.info("New Container {} ", newContainer);
+							if (newContainer != null)
+								compareAndSynch(newContainer.getProfiles(), oldContainer.getProfiles(), profileService,
+										oldContainer);
 						} catch (Exception e) {
 							LOG.error(e.getMessage(), e);
 						} finally {
-							LOG.info("Execution completed for {} ",containerName);
+							LOG.info("Execution completed for {} ", containerName);
 						}
 					}
 
@@ -657,9 +713,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			if (!profileExist) {
 				ProfileBuilder builder = ProfileBuilder.Factory.create(version.getId(),
 						oldProfileDetails.getProfileName());
-				builder.setParents(oldProfileDetails.getParents());
-				builder.setBundles(oldProfileDetails.getBundles());
-				builder.setFeatures(oldProfileDetails.getFeatures());
+
+				builder.setParents(new ArrayList<String>(oldProfileDetails.getParents()));
+				builder.setBundles(new ArrayList<String>(oldProfileDetails.getBundles()));
+				builder.setFeatures(new ArrayList<String>(oldProfileDetails.getFeatures()));
 				if (oldProfileDetails.getConfigurations() != null)
 					builder.setConfigurations(oldProfileDetails.getConfigurations());
 				builder.version(version.getId());
@@ -674,9 +731,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 				ProfileBuilder builder = ProfileBuilder.Factory.create(version.getId(),
 						oldProfileDetails.getProfileName());
-				builder.setParents(oldProfileDetails.getParents());
-				builder.setBundles(oldProfileDetails.getBundles());
-				builder.setFeatures(oldProfileDetails.getFeatures());
+
+				builder.setParents(new ArrayList<String>(oldProfileDetails.getParents()));
+				builder.setBundles(new ArrayList<String>(oldProfileDetails.getBundles()));
+				builder.setFeatures(new ArrayList<String>(oldProfileDetails.getFeatures()));
 
 				if (oldProfileDetails.getConfigurations() != null)
 					builder.setConfigurations(oldProfileDetails.getConfigurations());
@@ -717,6 +775,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			{
 				add(newProfile.getId());
 			}
+
 		}, false);
 
 	}
@@ -752,7 +811,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	 * does not exist 2. creates the profile if it does not exist 3. updates the
 	 * profile if it exists
 	 */
-	public void compareAndSynch(List<ProfileDetails> profilesList, List<ProfileDetails> oldProfilesList,
+	public void compareAndSynch(ConcurrentHashSet<ProfileDetails> profilesList, ConcurrentHashSet<ProfileDetails> oldProfilesList,
 			ProfileService profileService, EnsembleContainer oldContainer) {
 
 		String containerName = getContainerName(oldContainer.getContainerName());

@@ -1,7 +1,7 @@
 package org.redhat.fabric.commands.model;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 
 public class ProfileDetails implements Serializable{
@@ -12,12 +12,12 @@ public class ProfileDetails implements Serializable{
 	private static final long serialVersionUID = 5069214002075202593L;
 	private String profileName;
 	private String profileVersion;
-	private List<String> bundles;
-	private List<String> parents;
-	private List<String> repositories;
-	private List<String> fabs;
-	private List<String> features;
-	private List<String> pids;
+	private HashSet<String> bundles;
+	private HashSet<String> parents;
+	private HashSet<String> repositories;
+	private HashSet<String> fabs;
+	private HashSet<String> features;
+	private HashSet<String> pids;
 	private Map<String, Map<String, String>> configurations;
 	private Map<String,String> profileConfig ;
 	
@@ -33,40 +33,40 @@ public class ProfileDetails implements Serializable{
 	public void setProfileVersion(String profileVersion) {
 		this.profileVersion = profileVersion;
 	}
-	public List<String> getBundles() {
+	public HashSet<String> getBundles() {
 		return bundles;
 	}
-	public void setBundles(List<String> bundles) {
+	public void setBundles(HashSet<String> bundles) {
 		this.bundles = bundles;
 	}
-	public List<String> getParents() {
+	public HashSet<String> getParents() {
 		return parents;
 	}
-	public void setParents(List<String> parents) {
+	public void setParents(HashSet<String> parents) {
 		this.parents = parents;
 	}
-	public List<String> getRepositories() {
+	public HashSet<String> getRepositories() {
 		return repositories;
 	}
-	public void setRepositories(List<String> repositories) {
+	public void setRepositories(HashSet<String> repositories) {
 		this.repositories = repositories;
 	}
-	public List<String> getFabs() {
+	public HashSet<String> getFabs() {
 		return fabs;
 	}
-	public void setFabs(List<String> fabs) {
+	public void setFabs(HashSet<String> fabs) {
 		this.fabs = fabs;
 	}
-	public List<String> getFeatures() {
+	public HashSet<String> getFeatures() {
 		return features;
 	}
-	public void setFeatures(List<String> features) {
+	public void setFeatures(HashSet<String> features) {
 		this.features = features;
 	}
-	public List<String> getPids() {
+	public HashSet<String> getPids() {
 		return pids;
 	}
-	public void setPids(List<String> pids) {
+	public void setPids(HashSet<String> pids) {
 		this.pids = pids;
 	}
 	public Map<String, Map<String, String>> getConfigurations() {

@@ -1,7 +1,8 @@
 package org.redhat.fabric.commands.model;
 
 import java.io.Serializable;
-import java.util.List;
+
+import org.apache.mina.util.ConcurrentHashSet;
 
 public class Profiles implements Serializable{
 	
@@ -10,13 +11,13 @@ public class Profiles implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -8545269721774637676L;
-	private List<ProfileDetails> profileDetails;
+	private ConcurrentHashSet<ProfileDetails> profileDetails;
 
-	public List<ProfileDetails> getProfileDetails() {
+	public ConcurrentHashSet<ProfileDetails> getProfileDetails() {
 		return profileDetails;
 	}
 
-	public void setProfileDetails(List<ProfileDetails> profileDetails) {
+	public void setProfileDetails(ConcurrentHashSet<ProfileDetails> profileDetails) {
 		this.profileDetails = profileDetails;
 	}
 

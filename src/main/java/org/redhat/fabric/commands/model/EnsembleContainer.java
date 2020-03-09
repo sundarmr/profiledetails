@@ -1,7 +1,15 @@
 package org.redhat.fabric.commands.model;
 
 import java.io.Serializable;
+import java.lang.reflect.Type;
+import java.util.HashSet;
 import java.util.List;
+
+import org.apache.mina.util.ConcurrentHashSet;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import jline.internal.Log;
 
@@ -12,17 +20,17 @@ public class EnsembleContainer implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 	private String containerName;
-	private List<ProfileDetails> profiles;
-	private List<Context> contexts;
+	private ConcurrentHashSet<ProfileDetails> profiles;
+	private HashSet<Context> contexts;
 	private String version;
 	private String parent;
 	private String envDefaultVersion;
 
-	public List<Context> getContexts() {
+	public HashSet<Context> getContexts() {
 		return contexts;
 	}
 
-	public void setContexts(List<Context> contexts) {
+	public void setContexts(HashSet<Context> contexts) {
 		this.contexts = contexts;
 	}
 
@@ -34,11 +42,11 @@ public class EnsembleContainer implements Serializable {
 		this.containerName = containerName;
 	}
 
-	public List<ProfileDetails> getProfiles() {
+	public ConcurrentHashSet<ProfileDetails> getProfiles() {
 		return profiles;
 	}
 
-	public void setProfiles(List<ProfileDetails> profiles) {
+	public void setProfiles(ConcurrentHashSet<ProfileDetails> profiles) {
 		this.profiles = profiles;
 	}
 
@@ -125,8 +133,10 @@ public class EnsembleContainer implements Serializable {
 
 	@Override
 	public String toString() {
-		return "EnsembleContainer [containerName=" + containerName + ", profiles=" + profiles + ", contexts=" + contexts
-				+ ", version=" + version + ", parent=" + parent + ", envDefaultVersion=" + envDefaultVersion + "]";
+		Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
+		Type profileListType = new TypeToken<EnsembleContainer>() {
+		}.getType();
+		return gson.toJson(this,profileListType);
 	}
 
 }
