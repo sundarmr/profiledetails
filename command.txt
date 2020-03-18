@@ -31,7 +31,6 @@ container-change-profile codecontainer codeprofile
 	mvn:org.redhat.fabric/profiledetails-local/2.0.102-Snapshot
 	mvn:com.google.code.gson/gson/2.8.5.redhat-00001
 
- AB_ARIAblEPIC_ip_3.0.10
  
  container-profile-synch --jmxuser admin --jmxPassword admin --hosts fuse-002.local --remoteUser vagrant --remotePassword fm2tm\!\! --synchContexts false --environment d --zoneName rdc --child false --ignoreContainer codecontainer --path /ifs/fuse /Users/smunirat/git/profiledetails/firsttest.json
 
