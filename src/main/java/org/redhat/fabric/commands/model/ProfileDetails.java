@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Map;
 
+import io.fabric8.api.Profile;
+
 public class ProfileDetails implements Serializable{
 	
 	/**
@@ -21,6 +23,26 @@ public class ProfileDetails implements Serializable{
 	private Map<String, Map<String, String>> configurations;
 	private Map<String,String> profileConfig ;
 	
+	public ProfileDetails() {
+		super();
+	}
+	
+	public ProfileDetails(String profileName, String profileVersion, HashSet<String> bundles, HashSet<String> parents,
+			HashSet<String> repositories, HashSet<String> fabs, HashSet<String> features, HashSet<String> pids,
+			Map<String, Map<String, String>> configurations, Map<String, String> profileConfig) {
+		super();
+		this.profileName = profileName;
+		this.profileVersion = profileVersion;
+		this.bundles = bundles;
+		this.parents = parents;
+		this.repositories = repositories;
+		this.fabs = fabs;
+		this.features = features;
+		this.pids = pids;
+		this.configurations = configurations;
+		this.profileConfig = profileConfig;
+	}
+
 	public String getProfileName() {
 		return profileName;
 	}
@@ -99,8 +121,7 @@ public class ProfileDetails implements Serializable{
 	}
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
+		
 		if (obj == null)
 			return false;
 		if (getClass() != obj.getClass())

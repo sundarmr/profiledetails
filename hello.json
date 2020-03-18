@@ -1,0 +1,1246 @@
+{
+	"1.0": {
+		"version": "1.0",
+		"profileDetails": [
+			{
+				"profileName": "gateway-mq",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"gateway-fabric"
+				]
+			},
+			{
+				"profileName": "insight-metrics.base",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "feature-camel-jms",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"mq-client",
+					"feature-camel"
+				],
+				"repositories": [],
+				"features": [
+					"camel-jms"
+				]
+			},
+			{
+				"profileName": "insight-core",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"default",
+					"insight-metrics.base"
+				],
+				"repositories": [
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.apache.karaf.assemblies.features/enterprise/${version:karaf}/xml/features",
+					"mvn:io.fabric8/fabric8-karaf/${version:fabric}/xml/features"
+				],
+				"features": []
+			},
+			{
+				"profileName": "jboss-fuse-minimal",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"fabric",
+					"feature-camel"
+				],
+				"repositories": [
+					"mvn:org.jboss.fuse/jboss-fuse/${version:fuse}/xml/features"
+				],
+				"features": [
+					"camel-jdbc",
+					"jasypt-encryption",
+					"camel-spring",
+					"camel-blueprint",
+					"camel-jetty",
+					"camel-core",
+					"camel-jms",
+					"camel-jaxb"
+				]
+			},
+			{
+				"profileName": "unmanaged",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "autoscale",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [],
+				"features": [
+					"fabric-autoscale"
+				]
+			},
+			{
+				"profileName": "insight-metrics.elasticsearch",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"default",
+					"insight-elasticsearch.node",
+					"insight-metrics.base"
+				],
+				"repositories": [],
+				"features": [
+					"insight-elasticsearch-metrics-storage"
+				]
+			},
+			{
+				"profileName": "feature-fabric-web",
+				"profileVersion": "1.0",
+				"bundles": [
+					"mvn:org.ops4j.pax.url/pax-url-war/2.5.2/jar/uber"
+				],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"war",
+					"fabric-web"
+				]
+			},
+			{
+				"profileName": "insight-camel",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"feature-camel",
+					"insight-core"
+				],
+				"repositories": [],
+				"features": [
+					"insight-camel"
+				]
+			},
+			{
+				"profileName": "hawtio",
+				"profileVersion": "1.0",
+				"bundles": [
+					"mvn:org.ops4j.pax.url/pax-url-war/2.5.2/jar/uber"
+				],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [
+					"mvn:io.hawt/hawtio-karaf/${version:hawtio}/xml/features"
+				],
+				"features": [
+					"fabric-hawtio-swagger",
+					"fabric-redirect",
+					"hawtio-redhat-fuse-branding",
+					"war",
+					"swagger",
+					"fabric-hawtio"
+				]
+			},
+			{
+				"profileName": "feature-cxf",
+				"profileVersion": "1.0",
+				"bundles": [
+					"mvn:org.ops4j.pax.url/pax-url-war/2.5.2/jar/uber"
+				],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"war",
+					"fabric-cxf",
+					"cxf-core",
+					"fabric-cxf-registry"
+				]
+			},
+			{
+				"profileName": "fabric",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"karaf",
+					"hawtio"
+				],
+				"repositories": [],
+				"features": [
+					"fabric-ssh",
+					"fabric-agent",
+					"fabric-agent-commands",
+					"fabric-maven-proxy",
+					"fabric-groovy",
+					"fabric-commands",
+					"fabric-archetype-commands"
+				]
+			},
+			{
+				"profileName": "mq-client",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.apache.activemq/activemq-karaf/${version:activemq}/xml/features"
+				],
+				"features": [
+					"activemq-client",
+					"mq-fabric"
+				]
+			},
+			{
+				"profileName": "fabric-ensemble-0000-1",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"fabric-ensemble-0000"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-elasticsearch.node",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"insight-core"
+				],
+				"repositories": [],
+				"features": [
+					"insight-elasticsearch"
+				]
+			},
+			{
+				"profileName": "mq-client-default",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"mq-client-base"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "mq-default",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"mq-base"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "sample2",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"sampleparent2"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "gateway-http",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"gateway-fabric"
+				]
+			},
+			{
+				"profileName": "openshift",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [],
+				"features": [
+					"fabric-openshift"
+				]
+			},
+			{
+				"profileName": "sampleparentparent",
+				"profileVersion": "1.0",
+				"bundles": [
+					"mvn:com.google.code.gson/gson/2.8.5.redhat-00001"
+				],
+				"parents": [
+					"feature-camel"
+				],
+				"repositories": [],
+				"features": [
+					"camel-blueprint",
+					"camel-stream"
+				]
+			},
+			{
+				"profileName": "mq-base",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"mq-fabric-http-discovery",
+					"mq-fabric"
+				]
+			},
+			{
+				"profileName": "fabric-ensemble-0000",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-elasticsearch.datastore",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"insight-elasticsearch.node"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-logs.elasticsearch",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"default",
+					"insight-elasticsearch.node",
+					"insight-metrics.base"
+				],
+				"repositories": [],
+				"features": [
+					"insight-elasticsearch-log-storage"
+				]
+			},
+			{
+				"profileName": "mq-amq",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"mq-base"
+				],
+				"repositories": [],
+				"features": [
+					"patch"
+				]
+			},
+			{
+				"profileName": "insight-elasticsearch.basicauth",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"insight-core"
+				],
+				"repositories": [],
+				"features": [
+					"insight-elasticsearch-auth"
+				]
+			},
+			{
+				"profileName": "mq-client-local",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"mq-client-base"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "mq-replicated",
+				"profileVersion": "1.0",
+				"bundles": [
+					"mvn:org.scala-lang/scala-library/${version:scala}"
+				],
+				"parents": [
+					"mq-base"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "karaf",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [
+					"mvn:org.apache.karaf.assemblies.features/spring/${version:karaf}/xml/features",
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.apache.activemq/activemq-karaf/${version:activemq}/xml/features",
+					"mvn:org.apache.karaf.assemblies.features/enterprise/${version:karaf}/xml/features",
+					"mvn:org.apache.camel.karaf/apache-camel/${version:camel}/xml/features",
+					"mvn:org.apache.cxf.karaf/apache-cxf/${version:cxf}/xml/features",
+					"mvn:io.fabric8/fabric8-karaf/${version:fabric}/xml/features"
+				],
+				"features": []
+			},
+			{
+				"profileName": "feature-camel",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"camel-blueprint",
+					"camel-core",
+					"fabric-camel"
+				]
+			},
+			{
+				"profileName": "acls",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-console",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"insight-elasticsearch.node"
+				],
+				"repositories": [],
+				"features": [
+					"insight-kibana",
+					"insight-eshead"
+				]
+			},
+			{
+				"profileName": "jboss-fuse-full",
+				"profileVersion": "1.0",
+				"bundles": [
+					"mvn:org.ops4j.pax.url/pax-url-war/2.5.2/jar/uber"
+				],
+				"parents": [
+					"mq-amq",
+					"fabric",
+					"feature-camel",
+					"feature-cxf"
+				],
+				"repositories": [
+					"mvn:org.jboss.fuse/jboss-fuse/${version:fuse}/xml/features"
+				],
+				"features": [
+					"camel-bindy",
+					"camel-routebox",
+					"camel-jetty",
+					"camel-core",
+					"camel-jms",
+					"war",
+					"camel-cxf",
+					"swagger",
+					"camel-ognl",
+					"camel-snmp",
+					"camel-spring-javaconfig",
+					"camel-jdbc",
+					"jasypt-encryption",
+					"activemq-camel",
+					"camel-spring",
+					"camel-blueprint",
+					"camel-exec",
+					"camel-jaxb",
+					"camel-ftp",
+					"camel-jasypt",
+					"camel-saxon",
+					"camel-csv",
+					"camel-script"
+				]
+			},
+			{
+				"profileName": "sampleparent2",
+				"profileVersion": "1.0",
+				"bundles": [
+					"mvn:com.javacodegeeks.camel/camelHelloWorld/0.0.5-SNAPSHOT"
+				],
+				"parents": [
+					"sampleparentparent"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "codeprofile",
+				"profileVersion": "1.0",
+				"bundles": [
+					"mvn:com.google.code.gson/gson/2.8.5.redhat-00001",
+					"mvn:org.redhat.fabric/profiledetails-local/2.0.86-Snapshot"
+				],
+				"parents": [
+					"fabric"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "sample",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"sampleparent"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "sampleparent",
+				"profileVersion": "1.0",
+				"bundles": [
+					"mvn:com.javacodegeeks.camel/camelHelloWorld/0.0.4-SNAPSHOT"
+				],
+				"parents": [
+					"sampleparentparent"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "mq-client-base",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.apache.activemq/activemq-karaf/${version:activemq}/xml/features"
+				],
+				"features": [
+					"mq-fabric"
+				]
+			},
+			{
+				"profileName": "default",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"acls"
+				],
+				"repositories": [
+					"mvn:io.fabric8.patch/patch-features/${version:patch}/xml/features",
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.jboss.fuse/jboss-fuse/${version:fuse}/xml/features",
+					"mvn:io.fabric8/fabric8-karaf/${version:fabric}/xml/features"
+				],
+				"features": [
+					"fabric-agent",
+					"fabric-jaas",
+					"fabric-startup",
+					"insight-log",
+					"fabric-git",
+					"fabric-web",
+					"esb-commands-startup",
+					"patch",
+					"karaf",
+					"fabric-core",
+					"shell",
+					"fabric-git-server",
+					"jolokia"
+				]
+			},
+			{
+				"profileName": "support-base",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [
+					"mvn:io.fabric8.support/support-features/${version:fabric}/xml/features"
+				],
+				"features": [
+					"fabric-zookeeper-commands",
+					"support"
+				]
+			},
+			{
+				"profileName": "feature-dosgi",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"fabric-dosgi",
+					"camel-core"
+				]
+			},
+			{
+				"profileName": "insight-activemq",
+				"profileVersion": "1.0",
+				"bundles": [],
+				"parents": [
+					"insight-core"
+				],
+				"repositories": [],
+				"features": [
+					"insight-activemq"
+				]
+			}
+		],
+		"ensembleContainers": [
+			{
+				"containerName": "ent_cml_d24_out_rr",
+				"profileIds": [
+					"sample"
+				],
+				"version": "1.0",
+				"envDefaultVersion": "1.0"
+			}
+		]
+	},
+	"1.1": {
+		"version": "1.1",
+		"profileDetails": [
+			{
+				"profileName": "insight-elasticsearch.datastore",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"insight-elasticsearch.node"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-elasticsearch.basicauth",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"insight-core"
+				],
+				"repositories": [],
+				"features": [
+					"insight-elasticsearch-auth"
+				]
+			},
+			{
+				"profileName": "mq-client-local",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"mq-client-base"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-logs.elasticsearch",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"default",
+					"insight-elasticsearch.node",
+					"insight-metrics.base"
+				],
+				"repositories": [],
+				"features": [
+					"insight-elasticsearch-log-storage"
+				]
+			},
+			{
+				"profileName": "feature-camel",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"camel-blueprint",
+					"camel-core",
+					"fabric-camel"
+				]
+			},
+			{
+				"profileName": "karaf",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [
+					"mvn:org.apache.karaf.assemblies.features/spring/${version:karaf}/xml/features",
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.apache.activemq/activemq-karaf/${version:activemq}/xml/features",
+					"mvn:org.apache.karaf.assemblies.features/enterprise/${version:karaf}/xml/features",
+					"mvn:org.apache.camel.karaf/apache-camel/${version:camel}/xml/features",
+					"mvn:org.apache.cxf.karaf/apache-cxf/${version:cxf}/xml/features",
+					"mvn:io.fabric8/fabric8-karaf/${version:fabric}/xml/features"
+				],
+				"features": []
+			},
+			{
+				"profileName": "mq-replicated",
+				"profileVersion": "1.1",
+				"bundles": [
+					"mvn:org.scala-lang/scala-library/${version:scala}"
+				],
+				"parents": [
+					"mq-base"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "mq-amq",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"mq-base"
+				],
+				"repositories": [],
+				"features": [
+					"patch"
+				]
+			},
+			{
+				"profileName": "insight-console",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"insight-elasticsearch.node"
+				],
+				"repositories": [],
+				"features": [
+					"insight-kibana",
+					"insight-eshead"
+				]
+			},
+			{
+				"profileName": "acls",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-activemq",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"insight-core"
+				],
+				"repositories": [],
+				"features": [
+					"insight-activemq"
+				]
+			},
+			{
+				"profileName": "feature-dosgi",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"fabric-dosgi",
+					"camel-core"
+				]
+			},
+			{
+				"profileName": "sampleparent2",
+				"profileVersion": "1.1",
+				"bundles": [
+					"mvn:com.javacodegeeks.camel/camelHelloWorld/0.0.5-SNAPSHOT"
+				],
+				"parents": [
+					"sampleparentparent"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "sampleparent",
+				"profileVersion": "1.1",
+				"bundles": [
+					"mvn:com.javacodegeeks.camel/camelHelloWorld/0.0.4-SNAPSHOT"
+				],
+				"parents": [
+					"sampleparentparent"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "jboss-fuse-full",
+				"profileVersion": "1.1",
+				"bundles": [
+					"mvn:org.ops4j.pax.url/pax-url-war/2.5.2/jar/uber"
+				],
+				"parents": [
+					"mq-amq",
+					"fabric",
+					"feature-camel",
+					"feature-cxf"
+				],
+				"repositories": [
+					"mvn:org.jboss.fuse/jboss-fuse/${version:fuse}/xml/features"
+				],
+				"features": [
+					"camel-bindy",
+					"camel-routebox",
+					"camel-jetty",
+					"camel-core",
+					"camel-jms",
+					"war",
+					"camel-cxf",
+					"swagger",
+					"camel-ognl",
+					"camel-snmp",
+					"camel-spring-javaconfig",
+					"camel-jdbc",
+					"jasypt-encryption",
+					"activemq-camel",
+					"camel-spring",
+					"camel-blueprint",
+					"camel-exec",
+					"camel-jaxb",
+					"camel-ftp",
+					"camel-jasypt",
+					"camel-saxon",
+					"camel-csv",
+					"camel-script"
+				]
+			},
+			{
+				"profileName": "default",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"acls"
+				],
+				"repositories": [
+					"mvn:io.fabric8.patch/patch-features/${version:patch}/xml/features",
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.jboss.fuse/jboss-fuse/${version:fuse}/xml/features",
+					"mvn:io.fabric8/fabric8-karaf/${version:fabric}/xml/features"
+				],
+				"features": [
+					"fabric-agent",
+					"fabric-jaas",
+					"fabric-startup",
+					"insight-log",
+					"fabric-git",
+					"fabric-web",
+					"esb-commands-startup",
+					"patch",
+					"karaf",
+					"fabric-core",
+					"shell",
+					"fabric-git-server",
+					"jolokia"
+				]
+			},
+			{
+				"profileName": "mq-client-base",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.apache.activemq/activemq-karaf/${version:activemq}/xml/features"
+				],
+				"features": [
+					"mq-fabric"
+				]
+			},
+			{
+				"profileName": "support-base",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [
+					"mvn:io.fabric8.support/support-features/${version:fabric}/xml/features"
+				],
+				"features": [
+					"fabric-zookeeper-commands",
+					"support"
+				]
+			},
+			{
+				"profileName": "feature-camel-jms",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"mq-client",
+					"feature-camel"
+				],
+				"repositories": [],
+				"features": [
+					"camel-jms"
+				]
+			},
+			{
+				"profileName": "unmanaged",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-metrics.base",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-core",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"default",
+					"insight-metrics.base"
+				],
+				"repositories": [
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.apache.karaf.assemblies.features/enterprise/${version:karaf}/xml/features",
+					"mvn:io.fabric8/fabric8-karaf/${version:fabric}/xml/features"
+				],
+				"features": []
+			},
+			{
+				"profileName": "jboss-fuse-minimal",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"fabric",
+					"feature-camel"
+				],
+				"repositories": [
+					"mvn:org.jboss.fuse/jboss-fuse/${version:fuse}/xml/features"
+				],
+				"features": [
+					"camel-jdbc",
+					"jasypt-encryption",
+					"camel-spring",
+					"camel-blueprint",
+					"camel-jetty",
+					"camel-core",
+					"camel-jms",
+					"camel-jaxb"
+				]
+			},
+			{
+				"profileName": "autoscale",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [],
+				"features": [
+					"fabric-autoscale"
+				]
+			},
+			{
+				"profileName": "feature-fabric-web",
+				"profileVersion": "1.1",
+				"bundles": [
+					"mvn:org.ops4j.pax.url/pax-url-war/2.5.2/jar/uber"
+				],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"war",
+					"fabric-web"
+				]
+			},
+			{
+				"profileName": "insight-metrics.elasticsearch",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"default",
+					"insight-elasticsearch.node",
+					"insight-metrics.base"
+				],
+				"repositories": [],
+				"features": [
+					"insight-elasticsearch-metrics-storage"
+				]
+			},
+			{
+				"profileName": "insight-camel",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"feature-camel",
+					"insight-core"
+				],
+				"repositories": [],
+				"features": [
+					"insight-camel"
+				]
+			},
+			{
+				"profileName": "gateway-mq",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"gateway-fabric"
+				]
+			},
+			{
+				"profileName": "mq-default",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"mq-base"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "hawtio",
+				"profileVersion": "1.1",
+				"bundles": [
+					"mvn:org.ops4j.pax.url/pax-url-war/2.5.2/jar/uber"
+				],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [
+					"mvn:io.hawt/hawtio-karaf/${version:hawtio}/xml/features"
+				],
+				"features": [
+					"fabric-hawtio-swagger",
+					"fabric-redirect",
+					"hawtio-redhat-fuse-branding",
+					"war",
+					"swagger",
+					"fabric-hawtio"
+				]
+			},
+			{
+				"profileName": "mq-client-default",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"mq-client-base"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "feature-cxf",
+				"profileVersion": "1.1",
+				"bundles": [
+					"mvn:org.ops4j.pax.url/pax-url-war/2.5.2/jar/uber"
+				],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"war",
+					"fabric-cxf",
+					"cxf-core",
+					"fabric-cxf-registry"
+				]
+			},
+			{
+				"profileName": "codeprofile",
+				"profileVersion": "1.1",
+				"bundles": [
+					"mvn:org.redhat.fabric/profiledetails-local/2.0.62-Snapshot",
+					"mvn:com.google.code.gson/gson/2.8.5.redhat-00001"
+				],
+				"parents": [
+					"fabric"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "fabric",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"karaf",
+					"hawtio"
+				],
+				"repositories": [],
+				"features": [
+					"fabric-ssh",
+					"fabric-agent",
+					"fabric-agent-commands",
+					"fabric-maven-proxy",
+					"fabric-groovy",
+					"fabric-commands",
+					"fabric-archetype-commands"
+				]
+			},
+			{
+				"profileName": "fabric-ensemble-0000-1",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"fabric-ensemble-0000"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "insight-elasticsearch.node",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"insight-core"
+				],
+				"repositories": [],
+				"features": [
+					"insight-elasticsearch"
+				]
+			},
+			{
+				"profileName": "mq-client",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [
+					"mvn:org.apache.karaf.assemblies.features/standard/${version:karaf}/xml/features",
+					"mvn:org.apache.activemq/activemq-karaf/${version:activemq}/xml/features"
+				],
+				"features": [
+					"activemq-client",
+					"mq-fabric"
+				]
+			},
+			{
+				"profileName": "openshift",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"default"
+				],
+				"repositories": [],
+				"features": [
+					"fabric-openshift"
+				]
+			},
+			{
+				"profileName": "sample2",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"sampleparent2"
+				],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "sampleparentparent",
+				"profileVersion": "1.1",
+				"bundles": [
+					"mvn:com.google.code.gson/gson/2.8.5.redhat-00001"
+				],
+				"parents": [
+					"feature-camel"
+				],
+				"repositories": [],
+				"features": [
+					"camel-blueprint",
+					"camel-stream"
+				]
+			},
+			{
+				"profileName": "fabric-ensemble-0000",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [],
+				"repositories": [],
+				"features": []
+			},
+			{
+				"profileName": "mq-base",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"mq-fabric-http-discovery",
+					"mq-fabric"
+				]
+			},
+			{
+				"profileName": "gateway-http",
+				"profileVersion": "1.1",
+				"bundles": [],
+				"parents": [
+					"karaf"
+				],
+				"repositories": [],
+				"features": [
+					"gateway-fabric"
+				]
+			}
+		],
+		"ensembleContainers": [
+			{
+				"containerName": "val_cml_d25_out_ad",
+				"profileIds": [
+					"sample2"
+				],
+				"version": "1.1",
+				"envDefaultVersion": "1.0"
+			}
+		]
+	}
+}

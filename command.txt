@@ -1,0 +1,39 @@
+profile-import  file:///Users/smunirat/projects/fuse/profiles/version1.zip
+
+version-create --parent 1.0 11.0
+version-create --parent 1.0 11.0
+version-create --parent 1.0 35.0
+version-create --parent 1.0 55.0
+version-create --parent 1.0 75.0
+version-create --parent 1.0 85.0
+version-create --parent 1.0 80.0
+
+profile-import --version 11.0 file:///Users/smunirat/projects/fuse/profiles/version11.zip
+profile-import --version 25.0 file:///Users/smunirat/projects/fuse/profiles/version25.zip
+profile-import --version 35.0 file:///Users/smunirat/projects/fuse/profiles/version35.zip
+profile-import --version 55.0 file:///Users/smunirat/projects/fuse/profiles/version55.zip
+profile-import --version 75.0 file:///Users/smunirat/projects/fuse/profiles/version75.zip
+profile-import --version 80.0 file:///Users/smunirat/projects/fuse/profiles/version80.zip
+profile-import --version 85.0 file:///Users/smunirat/projects/fuse/profiles/version85.zip
+
+
+
+profile-create codeprofile
+profile-change-parents codeprofile fabric
+profile-edit --bundle mvn:org.redhat.fabric/profiledetails-local/2.0.134-Snapshot codeprofile
+profile-edit --bundle mvn:com.google.code.gson/gson/2.8.5.redhat-00001 codeprofile
+container-create-ssh --user vagrant --password vagrant --host fuse-002.local --profile codeprofile codecontainer
+
+
+container-change-profile codecontainer codeprofile
+
+
+	mvn:org.redhat.fabric/profiledetails-local/2.0.102-Snapshot
+	mvn:com.google.code.gson/gson/2.8.5.redhat-00001
+
+ AB_ARIAblEPIC_ip_3.0.10
+ 
+ container-profile-synch --jmxuser admin --jmxPassword admin --hosts fuse-002.local --remoteUser vagrant --remotePassword fm2tm\!\! --synchContexts false --environment d --zoneName rdc --child false --ignoreContainer codecontainer --path /ifs/fuse /Users/smunirat/git/profiledetails/firsttest.json
+
+ 
+ shss-translation-ebr-AB_CPOINTblEPIC_ip_3.0.16
