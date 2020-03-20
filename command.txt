@@ -36,3 +36,12 @@ container-change-profile codecontainer codeprofile
 
  
  shss-translation-ebr-AB_CPOINTblEPIC_ip_3.0.16
+ 
+ 
+ container-profile-synch --jmxuser admin --jmxPassword admin --remoteUser vagrant --remotePassword vagrant  --synchContexts false --environment q --zoneName edc  --child false --path /ifs/fuse /Users/smunirat/git/jartransfer/final.json
+ 
+ --hosts dcqlesb820 --hosts dcqlesb821 --hosts dcqlesb822 --hosts dcqlesb823 --hosts dcqlesb824 --hosts dcqlesb825 --hosts dcqlesb830 --hosts dcqlesb831 --hosts dcqlesb832 --hosts dcqlesb833 --hosts dcqlesb834 --hosts dcqlesb835 --hosts dcqlesb840 --hosts dcqlesb841 --hosts dcqlesb842 --hosts dcqlesb843 --hosts dcqlesb844 --hosts dcqlesb845 
+ 
+ 
+ 
+ | 181 - org\.redhat\.fabric\.profiledetails-local - 2\.0\.169\.Snapshot |
