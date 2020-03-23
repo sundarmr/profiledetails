@@ -295,37 +295,27 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		Container[] containers = fabricService.getContainers();
 		List<Container> stoppedContainers = new ArrayList<Container>();
 		for (Container container : containers) {
-			
+
 			if (container.getProvisionStatus().contains("error") || container.getProvisionStatus().equals("")
-					|| !container.isAlive() || container.getProvisionStatus().contains("stop") ) {
+					|| !container.isAlive() || container.getProvisionStatus().contains("stop")) {
 				stoppedContainers.add(container);
 				java.util.Arrays.asList(Profile.class);
 			}
-			if(!container.isManaged() && !container.isEnsembleServer()) {
+			if (!container.isManaged() && !container.isEnsembleServer()) {
 				Profile[] profiles2 = container.getProfiles();
 				Set profiles = new HashSet<Profile>(java.util.Arrays.asList(container.getProfiles()));
 				CreateSshContainerOptions.Builder sshBuilder = CreateSshContainerOptions.builder()
-						.name(container.getId())
-						.ensembleServer(container.isEnsembleServer())
-						.resolver(resolver)
-						.bindAddress(bindAddress)
-						.manualIp(manualIp).number(1).host(container.getLocalHostname())
-						.preferredAddress(container.getLocalHostname())
-						.username(remoteUser)
-						.password(remotePassword)
-						.proxyUri(fabricService.getMavenRepoURI())
-						.zookeeperUrl(fabricService.getZookeeperUrl())
-						.zookeeperPassword(
-								isEnsembleServer && zookeeperPassword != null ? zookeeperPassword
-										: fabricService.getZookeeperPassword())
+						.name(container.getId()).ensembleServer(container.isEnsembleServer()).resolver(resolver)
+						.bindAddress(bindAddress).manualIp(manualIp).number(1).host(container.getLocalHostname())
+						.preferredAddress(container.getLocalHostname()).username(remoteUser).password(remotePassword)
+						.proxyUri(fabricService.getMavenRepoURI()).zookeeperUrl(fabricService.getZookeeperUrl())
+						.zookeeperPassword(isEnsembleServer && zookeeperPassword != null ? zookeeperPassword
+								: fabricService.getZookeeperPassword())
 						.jvmOpts(jvmOpts != null ? jvmOpts : fabricService.getDefaultJvmOptions())
-						.version(container.getVersion().getId())
-						.profiles(profiles)
-						.dataStoreProperties(getDataStoreProperties())
-						.uploadDistribution(false)
-						.path(path)
+						.version(container.getVersion().getId()).profiles(profiles)
+						.dataStoreProperties(getDataStoreProperties()).uploadDistribution(false).path(path)
 						.waitForProvision(false);
-				fabricService.destroyContainer(container,true);
+				fabricService.destroyContainer(container, true);
 				fabricService.createContainers(sshBuilder.build());
 			}
 		}
@@ -349,7 +339,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 			}
 		}
-		
+
 	}
 
 	private void stopContainers(List<Container> stoppedContainers, final ExecutorService service,
@@ -362,7 +352,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				public void run() {
 					try {
 						fabricService.stopContainer(container, true);
-						LOG.info("Stopped container {}",container.getId());
+						LOG.info("Stopped container {}", container.getId());
 					} finally {
 						latch.countDown();
 					}
@@ -381,7 +371,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				public void run() {
 					try {
 						fabricService.startContainer(container, true);
-						LOG.info("Started container {}",container.getId());
+						LOG.info("Started container {}", container.getId());
 					} finally {
 						latch.countDown();
 					}
@@ -403,7 +393,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			if (oldConfiguration.contains(newContainer)) {
 				EnsembleContainer oldContainer = oldConfiguration.get(oldConfiguration.indexOf(newContainer));
 				if (!oldContainer.getContexts().equals(newContainer.getContexts())) {
-					LOG.info("reloading profiles....");
+					LOG.debug("reloading profiles....");
 					ConcurrentHashSet<ProfileDetails> profiles = oldContainer.getProfiles();
 					Container container = fabricService.getContainer(getContainerName(oldContainer.getContainerName()));
 					List<String> profileNames = getProfileNames(profiles);
@@ -543,10 +533,6 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		ExecutorService containerExecutorService = Executors.newFixedThreadPool(oldConfiguration.size());
 		final CountDownLatch containerCountDownLatch = new CountDownLatch(oldConfiguration.size());
 
-		for (EnsembleContainer container : oldConfiguration) {
-			LOG.info("{}", container.getContainerName());
-		}
-
 		for (final EnsembleContainer oldContainer : oldConfiguration) {
 
 			if (!oldContainer.getContainerName().equalsIgnoreCase(ignoreContainer)) {
@@ -578,8 +564,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 											.zookeeperPassword(fabricService.getZookeeperPassword())
 											.jmxPassword(jmxPassword).jmxUser(jmxuser)
 											.version(fabricService.getDefaultVersionId())
-											.jvmOpts(fabricService.getDefaultJvmOptions())
-											.profiles("default");
+											.jvmOpts(fabricService.getDefaultJvmOptions()).profiles("default");
 									try {
 										createContainers = fabricService.createContainers(builder.build());
 									} catch (Exception e) {
@@ -591,20 +576,21 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 									LOG.info("Container  {}  will be created on  {}",
 											getContainerName(oldContainer.getContainerName()), pickHost);
-									
+
 									String hostAddress = InetAddress.getByName(pickHost).getHostAddress();
 
 									LOG.debug("host is {}", pickHost);
 									LOG.debug(" Address is {} ", InetAddress.getByName(pickHost).getHostAddress());
-									
+
 									Version requiredVersion = null;
 									try {
 										requiredVersion = profileService.getRequiredVersion(oldContainer.getVersion());
-									}catch(Exception e) {
-											LOG.warn("Version {}  could not be created ",oldContainer.getVersion());
+									} catch (Exception e) {
+										LOG.warn("Version {}  could not be created ", oldContainer.getVersion());
 									}
-									
-									if (requiredVersion!= null && requiredVersion.getId().equalsIgnoreCase(oldContainer.getVersion())) {
+
+									if (requiredVersion != null
+											&& requiredVersion.getId().equalsIgnoreCase(oldContainer.getVersion())) {
 										createVersionIfDoesnotExist(oldContainer.getVersion(), profileService);
 									}
 									String actualPath = null;
@@ -628,9 +614,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 										availableProfiles = getProfiles(fabricService, oldContainer.getVersion(),
 												associatedProfiles, oldProfieDetails, oldContainer.getContainerName());
 										associatedProfiles.clear();
-										for(Profile profile:availableProfiles) {
+										for (Profile profile : availableProfiles) {
 											String id = profile.getId();
-											if(!"default".equalsIgnoreCase(id))
+											if (!"default".equalsIgnoreCase(id))
 												associatedProfiles.add(profile.getId());
 										}
 									} catch (Exception e) {
@@ -639,21 +625,17 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 									CreateSshContainerOptions.Builder sshBuilder = CreateSshContainerOptions.builder()
 											.name(containerName).ensembleServer(isEnsembleServer).resolver(resolver)
 											.bindAddress(bindAddress).manualIp(manualIp).number(1).host(pickHost)
-											.preferredAddress(hostAddress).username(remoteUser)
-											.password(remotePassword)
+											.preferredAddress(hostAddress).username(remoteUser).password(remotePassword)
 											.proxyUri(fabricService.getMavenRepoURI())
 											.zookeeperUrl(fabricService.getZookeeperUrl())
 											.zookeeperPassword(
 													isEnsembleServer && zookeeperPassword != null ? zookeeperPassword
 															: fabricService.getZookeeperPassword())
 											.jvmOpts(jvmOpts != null ? jvmOpts : fabricService.getDefaultJvmOptions())
-											.version(oldContainer.getVersion())
-											.profiles(associatedProfiles)
-											.dataStoreProperties(getDataStoreProperties())
-											.uploadDistribution(false)
-											.path(actualPath)
-											.waitForProvision(false);
-									
+											.version(oldContainer.getVersion()).profiles(associatedProfiles)
+											.dataStoreProperties(getDataStoreProperties()).uploadDistribution(false)
+											.path(actualPath).waitForProvision(false);
+
 									createContainers = waitAndStartContainer(sshBuilder);
 
 									Thread.sleep(1000L);
@@ -661,14 +643,16 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 								if (checkContainers(createContainers)) {
 									Container container = fabricService.getContainer(containerName);
-									//stopContainer(container);
-									//LOG.info("Profiles {} have been added to container {} ", container.getProfileIds(),
-									//		container.getId());
+									// stopContainer(container);
+									// LOG.info("Profiles {} have been added to container {} ",
+									// container.getProfileIds(),
+									// container.getId());
 
 									/*
 									 * try { fabricService.startContainer(container, true); } catch (Exception e) {
-									 * LOG.warn("Unable to start container {} ", container.getId()); }*/
-									 
+									 * LOG.warn("Unable to start container {} ", container.getId()); }
+									 */
+
 								}
 
 							} else {
@@ -680,26 +664,26 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 									if (newEnsemble.getContainerName().equalsIgnoreCase(containerName)
 											&& !ignoreContainer.equalsIgnoreCase(newEnsemble.getContainerName())) {
 
-										LOG.info("Synching up newEnsemble Container {} with {}", containerName,
+										LOG.debug("Synching up newEnsemble Container {} with {}", containerName,
 												oldContainer.getContainerName());
 										newEnsembleontainer = newEnsemble;
 										break;
 									}
 								}
-								LOG.info(" Container found {}",
+								LOG.debug(" Container found {}",
 										newEnsembleontainer == null ? "" : newEnsembleontainer.getContainerName());
 								if (newEnsembleontainer != null) {
 									// public void synchProfiles(FabricService fabricService,
 									// ConcurrentHashSet<ProfileDetails> oldProfileDetails,
 									// ConcurrentHashSet<ProfileDetails> newProfileDetails, List<String>
 									// containerProfiles) {
-									LOG.info("Synching existing container {} ", newEnsembleontainer.getContainerName());
-									
-									
+									LOG.debug("Synching existing container {} ",
+											newEnsembleontainer.getContainerName());
+
 									synchProfiles(fabricService, oldContainer.getProfiles(),
 											newEnsembleontainer.getProfiles(), newContainer.getProfileIds(),
 											newContainer);
-									LOG.info("New container {} created with profiles {}", newContainer.getId(),
+									LOG.debug("New container {} created with profiles {}", newContainer.getId(),
 											newContainer.getProfileIds());
 								}
 							}
@@ -713,28 +697,29 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 					}
 
 					private CreateContainerMetadata[] waitAndStartContainer(Builder sshBuilder) {
-						CreateContainerMetadata[] createContainers=null;
+						CreateContainerMetadata[] createContainers = null;
 						try {
 							createContainers = fabricService.createContainers(sshBuilder.build());
-						}catch(Exception e) {
-							if(e.getMessage().contains("lock")) {
-								LOG.info("Profile lock occured for container creation {} {}",sshBuilder.getName(),e.getMessage());
+						} catch (Exception e) {
+							if (e.getMessage().contains("lock")) {
+								LOG.info("Profile lock occured for container creation {} {}", sshBuilder.getName(),
+										e.getMessage());
 								try {
 									Thread.sleep(2000L);
 									waitAndStartContainer(sshBuilder);
-									
+
 								} catch (InterruptedException e1) {
-									LOG.warn("Unknown Error {}",e.getMessage());
+									LOG.warn("Unknown Error {}", e.getMessage());
 								}
-								
+
 							}
-								
+
 						}
 						return createContainers;
 					}
 
 					private void stopContainer(Container container) {
-							fabricService.stopContainer(container);
+						fabricService.stopContainer(container);
 					}
 				});
 			} else {
@@ -747,9 +732,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		} catch (Exception e) {
 			LOG.warn("Issue with Container creation thread {}", e.getMessage());
 		}
-		//restartContainers(oldConfiguration);
+		// restartContainers(oldConfiguration);
 	}
-
 
 	private void restartContainers(List<EnsembleContainer> oldConfiguration) {
 
@@ -810,7 +794,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 									container.getProvisionStatus());
 						}
 
-					if (container != null && (container.getProvisionStatus().contains("error")
+						if (container != null && (container.getProvisionStatus().contains("error")
 								|| (container.getProvisionStatus() == null || !container.isEnsembleServer()
 										|| container.getProvisionStatus().equals("")))) {
 							fabricService.stopContainer(containerName, true);
@@ -838,7 +822,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 					try {
 						Container container = fabricService.getContainer(containerName);
 						if (container != null && !container.isAliveAndOK()) {
-							
+
 							fabricService.startContainer(containerName, true);
 						}
 					} finally {
@@ -1020,11 +1004,11 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	public void synchProfiles(FabricService fabricService, ConcurrentHashSet<ProfileDetails> oldProfileDetails,
 			ConcurrentHashSet<ProfileDetails> newProfileDetails, List<String> containerProfiles,
 			Container newContainer) {
-		
+
 		ConcurrentHashSet<ProfileDetails> missingProfiles = new ConcurrentHashSet<ProfileDetails>();
 		List<String> missingProfileIds = new ArrayList<String>();
 
-		LOG.info("container {} Old profiles {} new profiles {}", newContainer.getId(), oldProfileDetails.size(),
+		LOG.debug("container {} Old profiles {} new profiles {}", newContainer.getId(), oldProfileDetails.size(),
 				newProfileDetails.size());
 		if (oldProfileDetails.size() > newProfileDetails.size()) {
 
@@ -1043,9 +1027,11 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				}
 			}
 		}
-		
+
 		if (missingProfiles != null && missingProfiles.size() > 0) {
-			LOG.info("Container {} is missing profiles {}", newContainer.getId(), missingProfileIds);
+
+			LOG.info("Synching Container {} as it is missing profiles {} ", newContainer.getId(), missingProfileIds);
+
 			Iterator<ProfileDetails> iterator = oldProfileDetails.iterator();
 			String version = null;
 			while (iterator.hasNext()) {
@@ -1058,9 +1044,15 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			} catch (Exception e) {
 				LOG.warn("Exception when getting profiles {} ", e.getMessage());
 			}
-			if (profiles2 != null)
+			if (profiles2 != null) {
 				newContainer.addProfiles(profiles2);
-			else {
+				try {
+					fabricService.stopContainer(newContainer, true);
+					fabricService.startContainer(newContainer, true);
+				} catch (Exception e) {
+					LOG.error("Error after reassigning profiles {}", e.getMessage());
+				}
+			} else {
 				LOG.error("Container {} count not be assigned any new profiles ", newContainer.getId());
 			}
 		}
@@ -1073,11 +1065,11 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 						LOG.debug(" Old Profile {} and new Profile{} are same ", oldProfileDetail.getProfileName(),
 								newProfileDetail.getProfileName());
 					} else {
-						LOG.info("Old profile {} and new profile {} are not same ", oldProfileDetail, newProfileDetail);
+						LOG.info("Old profile  and new profile  are not same for {}",
+								oldProfileDetail.getProfileName());
 
-						
 						try {
-							ProfileService profileService = fabricService.adapt(ProfileService.class);
+							// ProfileService profileService = fabricService.adapt(ProfileService.class);
 							Profile newProfile = profileService.getProfile(oldProfileDetail.getProfileVersion(),
 									oldProfileDetail.getProfileName());
 							ProfileBuilder builder = null;
@@ -1098,24 +1090,36 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 									LOG.warn("Profile could not be created {}", oldProfileDetail.getProfileName());
 								}
 							} else {
+								LOG.info("Synching up profile details for {} with ", newProfile.getId());
 								builder = ProfileBuilder.Factory.createFrom(newProfile);
-								builder.setParents(new ArrayList<String>(oldProfileDetail.getParents()));
-								builder.setBundles(new ArrayList<String>(oldProfileDetail.getBundles()));
-								builder.setFeatures(new ArrayList<String>(oldProfileDetail.getFeatures()));
-								if (oldProfileDetail.getConfigurations() != null) {
-									builder.setConfigurations(oldProfileDetail.getConfigurations());
-								}
-								builder.version(oldProfileDetail.getProfileVersion());
-								try {
-									profileService.updateProfile(builder.getProfile());
-								} catch (Exception e) {
+								LOG.info("Acquired Profile Builder {}", builder);
+								if (builder != null) {
+									if (oldProfileDetail.getParents() != null)
+										builder.setParents(new ArrayList<String>(oldProfileDetail.getParents()));
+									if (oldProfileDetail.getBundles() != null)
+										builder.setBundles(new ArrayList<String>(oldProfileDetail.getBundles()));
+									if (oldProfileDetail.getFeatures() != null)
+										builder.setFeatures(new ArrayList<String>(oldProfileDetail.getFeatures()));
+									if (oldProfileDetail.getConfigurations() != null) {
+										LOG.info("synching up profile config {}", oldProfileDetail.getConfigurations());
+										builder.setConfigurations(oldProfileDetail.getConfigurations());
+									}
 
-									LOG.warn("Profile could not be updated {} ", newProfile.getId());
+									builder.version(oldProfileDetail.getProfileVersion());
+									try {
+										profileService.updateProfile(builder.getProfile());
+									} catch (Exception e) {
+
+										LOG.warn("Profile could not be updated {} ", newProfile.getId());
+									}
+								} else {
+									LOG.warn("profile builder could not be obtained");
 								}
+
 							}
 						} catch (Exception e) {
 							LOG.error("Profile {} could not be assigned to {} {} {}", oldProfileDetail.getProfileName(),
-									newContainer.getId(), newContainer.getProfileIds(), e.getMessage());
+									newContainer.getId(), newContainer.getProfileIds(), e.getMessage(), e);
 						}
 					}
 
@@ -1167,7 +1171,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 								ensembleContainer.setVersion(container.getVersionId());
 								ensembleContainer.setContexts(getContextList(System.out, container));
 								ensembleSet.add(ensembleContainer);
-								LOG.info("Container {} Processed", container.getId());
+								LOG.debug("Container {} Processed", container.getId());
 
 							}
 						} finally {
@@ -1181,7 +1185,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			try {
 				latch.await();
 			} catch (InterruptedException e) {
-				LOG.warn("Unknown error {}",e.getMessage());
+				LOG.warn("Unknown error {}", e.getMessage());
 			}
 			Iterator<EnsembleContainer> iterator = ensembleSet.iterator();
 			while (iterator.hasNext())
