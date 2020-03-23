@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>org.redhat.fabric</groupId>
 	<artifactId>profiledetails-local</artifactId>
-	<version>2.0.194-Snapshot</version>
+	<version>3.0.0-Snapshot</version>
 	<packaging>bundle</packaging>
 	
 	<dependencies>
