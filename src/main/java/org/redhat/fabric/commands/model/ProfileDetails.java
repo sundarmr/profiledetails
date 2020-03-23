@@ -1,7 +1,6 @@
 package org.redhat.fabric.commands.model;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +17,10 @@ public class ProfileDetails implements Serializable{
 	private List<String> repositories;
 	private List<String> fabs;
 	private List<String> features;
+	private List<String>  libraries;
+	private Map<String, String>  attributes;
 	private Map<String, Map<String, String>> configurations;
+
 	
 	public ProfileDetails() {
 		super();
@@ -138,14 +140,40 @@ public class ProfileDetails implements Serializable{
 
 
 
+	public List<String> getLibraries() {
+		return libraries;
+	}
+
+
+
+	public void setLibraries(List<String> libraries) {
+		this.libraries = libraries;
+	}
+
+
+
+	public Map<String, String> getAttributes() {
+		return attributes;
+	}
+
+
+
+	public void setAttributes(Map<String, String> attributes) {
+		this.attributes = attributes;
+	}
+
+
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((attributes == null) ? 0 : attributes.hashCode());
 		result = prime * result + ((bundles == null) ? 0 : bundles.hashCode());
 		result = prime * result + ((configurations == null) ? 0 : configurations.hashCode());
 		result = prime * result + ((fabs == null) ? 0 : fabs.hashCode());
 		result = prime * result + ((features == null) ? 0 : features.hashCode());
+		result = prime * result + ((libraries == null) ? 0 : libraries.hashCode());
 		result = prime * result + ((parents == null) ? 0 : parents.hashCode());
 		result = prime * result + ((profileName == null) ? 0 : profileName.hashCode());
 		result = prime * result + ((profileVersion == null) ? 0 : profileVersion.hashCode());
@@ -164,6 +192,11 @@ public class ProfileDetails implements Serializable{
 		if (getClass() != obj.getClass())
 			return false;
 		ProfileDetails other = (ProfileDetails) obj;
+		if (attributes == null) {
+			if (other.attributes != null)
+				return false;
+		} else if (!attributes.equals(other.attributes))
+			return false;
 		if (bundles == null) {
 			if (other.bundles != null)
 				return false;
@@ -183,6 +216,11 @@ public class ProfileDetails implements Serializable{
 			if (other.features != null)
 				return false;
 		} else if (!features.equals(other.features))
+			return false;
+		if (libraries == null) {
+			if (other.libraries != null)
+				return false;
+		} else if (!libraries.equals(other.libraries))
 			return false;
 		if (parents == null) {
 			if (other.parents != null)
@@ -213,9 +251,7 @@ public class ProfileDetails implements Serializable{
 	public String toString() {
 		return "ProfileDetails [profileName=" + profileName + ", profileVersion=" + profileVersion + ", bundles="
 				+ bundles + ", parents=" + parents + ", repositories=" + repositories + ", fabs=" + fabs + ", features="
-				+ features + ", configurations=" + configurations + "]";
+				+ features + ", libraries=" + libraries + ", attributes=" + attributes + ",  configurations=" + configurations + "]";
 	}
-
-
 	
 }

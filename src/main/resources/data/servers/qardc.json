@@ -1,0 +1,187 @@
+{
+	"rdqlesb821": [
+		"bay_amq_q21_in_audit",
+		"bay_amq_q21_in_biobkr",
+		"bay_amq_q21_in_bkr",
+		"bay_cml_q21_in_ad",
+		"bay_cml_q21_in_oe",
+		"bay_cml_q21_in_oth",
+		"bay_cml_q21_in_rr"
+	],
+	"rdqlesb832": [
+		"val_amq_q22_xlate_audit",
+		"val_cml_q22_router_cat",
+		"val_cml_q22_xlate_ad",
+		"val_cml_q22_xlate_cvr2",
+		"val_cml_q22_xlate_oe",
+		"val_cml_q22_xlate_oth",
+		"val_cml_q22_xlate_rr",
+		"val_cml_q22_xlate_ssr2"
+	],
+	"rdqlesb843": [
+		"ent_amq_q23_xlate_audit",
+		"ent_cml_q23_cbr_bay",
+		"ent_cml_q23_cbr_bay2",
+		"ent_cml_q23_cbr_val",
+		"ent_cml_q23_cbr_val2",
+		"ent_cml_q23_cbr_xrr",
+		"ent_cml_q23_router_cat",
+		"ent_cml_q23_xlate_all",
+		"ent_cml_q23_xlate_cat"
+	],
+	"rdqlesb822": [
+		"bay_amq_q22_xlate_audit",
+		"bay_cml_q22_router_cat",
+		"bay_cml_q22_xlate_ad",
+		"bay_cml_q22_xlate_ebr2",
+		"bay_cml_q22_xlate_oe",
+		"bay_cml_q22_xlate_oth",
+		"bay_cml_q22_xlate_pcr2",
+		"bay_cml_q22_xlate_rr",
+		"bay_cml_q22_xlate_wbr2"
+	],
+	"rdqlesb833": [
+		"val_amq_q23_xlate_audit",
+		"val_cml_q23_router_cat",
+		"val_cml_q23_xlate_ad",
+		"val_cml_q23_xlate_cvr2",
+		"val_cml_q23_xlate_oe",
+		"val_cml_q23_xlate_oth",
+		"val_cml_q23_xlate_rr",
+		"val_cml_q23_xlate_ssr2"
+	],
+	"rdqlesb844": [
+		"ent_amq_q24_out_audit",
+		"ent_amq_q24_out_bkr",
+		"ent_amq_q24_out_catbkr",
+		"ent_amq_q24_out_epicbkr",
+		"ent_cml_q24_out_ad",
+		"ent_cml_q24_out_all",
+		"ent_cml_q24_out_cat",
+		"ent_cml_q24_out_oe",
+		"ent_cml_q24_out_oth",
+		"ent_cml_q24_out_rr"
+	],
+	"rdqlesb823": [
+		"bay_amq_q23_xlate_audit",
+		"bay_cml_q23_router_cat",
+		"bay_cml_q23_xlate_ad",
+		"bay_cml_q23_xlate_ebr2",
+		"bay_cml_q23_xlate_oe",
+		"bay_cml_q23_xlate_oth",
+		"bay_cml_q23_xlate_pcr2",
+		"bay_cml_q23_xlate_rr",
+		"bay_cml_q23_xlate_wbr2"
+	],
+	"rdqlesb834": [
+		"val_amq_q24_out_audit",
+		"val_amq_q24_out_biobkr",
+		"val_amq_q24_out_bkr",
+		"val_cml_q24_out_ad",
+		"val_cml_q24_out_oe",
+		"val_cml_q24_out_oth",
+		"val_cml_q24_out_rr"
+	],
+	"rdqlesb845": [
+		"ent_amq_q25_out_audit",
+		"ent_amq_q25_out_bkr",
+		"ent_amq_q25_out_catbkr",
+		"ent_amq_q25_out_epicbkr",
+		"ent_cml_q25_out_ad",
+		"ent_cml_q25_out_all",
+		"ent_cml_q25_out_cat",
+		"ent_cml_q25_out_oe",
+		"ent_cml_q25_out_oth",
+		"ent_cml_q25_out_rr"
+	],
+	"rdqlesb824": [
+		"bay_amq_q24_out_audit",
+		"bay_amq_q24_out_biobkr",
+		"bay_amq_q24_out_bkr",
+		"bay_cml_q24_out_ad",
+		"bay_cml_q24_out_oe",
+		"bay_cml_q24_out_oth",
+		"bay_cml_q24_out_rr"
+	],
+	"rdqlesb835": [
+		"val_amq_q25_out_audit",
+		"val_amq_q25_out_biobkr",
+		"val_amq_q25_out_bkr",
+		"val_cml_q25_out_ad",
+		"val_cml_q25_out_oe",
+		"val_cml_q25_out_oth",
+		"val_cml_q25_out_rr"
+	],
+	"rdqlesb825": [
+		"bay_amq_q25_out_audit",
+		"bay_amq_q25_out_biobkr",
+		"bay_amq_q25_out_bkr",
+		"bay_cml_q25_out_ad",
+		"bay_cml_q25_out_oe",
+		"bay_cml_q25_out_oth",
+		"bay_cml_q25_out_rr"
+	],
+	"rdqlesb840": [
+		"ent_amq_q20_in_audit",
+		"ent_amq_q20_in_bkr",
+		"ent_amq_q20_in_catbkr",
+		"ent_amq_q20_in_epicbkr",
+		"ent_cml_q20_in_ad",
+		"ent_cml_q20_in_all",
+		"ent_cml_q20_in_cat",
+		"ent_cml_q20_in_oe",
+		"ent_cml_q20_in_oth",
+		"ent_cml_q20_in_rr"
+	],
+	"rdqlesb830": [
+		"val_amq_q20_in_audit",
+		"val_amq_q20_in_biobkr",
+		"val_amq_q20_in_bkr",
+		"val_cml_q20_in_ad",
+		"val_cml_q20_in_oe",
+		"val_cml_q20_in_oth",
+		"val_cml_q20_in_rr"
+	],
+	"rdqlesb841": [
+		"ent_amq_q21_in_audit",
+		"ent_amq_q21_in_bkr",
+		"ent_amq_q21_in_catbkr",
+		"ent_amq_q21_in_epicbkr",
+		"ent_cml_q21_in_ad",
+		"ent_cml_q21_in_all",
+		"ent_cml_q21_in_cat",
+		"ent_cml_q21_in_oe",
+		"ent_cml_q21_in_oth",
+		"ent_cml_q21_in_rr"
+	],
+	"rdqlesb820": [
+		"bay_amq_q20_in_audit",
+		"bay_amq_q20_in_biobkr",
+		"bay_amq_q20_in_bkr",
+		"bay_cml_q20_ansible_mgmt",
+		"bay_cml_q20_in_ad",
+		"bay_cml_q20_in_oe",
+		"bay_cml_q20_in_oth",
+		"bay_cml_q20_in_rr"
+	],
+	"rdqlesb831": [
+		"val_amq_q21_in_audit",
+		"val_amq_q21_in_biobkr",
+		"val_amq_q21_in_bkr",
+		"val_cml_q21_in_ad",
+		"val_cml_q21_in_oe",
+		"val_cml_q21_in_oth",
+		"val_cml_q21_in_rr"
+	],
+	"rdqlesb842": [
+		"ent_amq_q22_xlate_audit",
+		"ent_cml_q22_cbr_bay",
+		"ent_cml_q22_cbr_bay2",
+		"ent_cml_q22_cbr_val",
+		"ent_cml_q22_cbr_val2",
+		"ent_cml_q22_cbr_xrr",
+		"ent_cml_q22_router_cat",
+		"ent_cml_q22_xlate_all",
+		"ent_cml_q22_xlate_cat"
+	]
+}

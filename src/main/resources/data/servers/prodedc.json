@@ -1,0 +1,187 @@
+{
+	"dcplesb121": [
+		"bay_amq_p11_in_audit",
+		"bay_amq_p11_in_biobkr",
+		"bay_amq_p11_in_bkr",
+		"bay_cml_p11_in_ad",
+		"bay_cml_p11_in_oe",
+		"bay_cml_p11_in_oth",
+		"bay_cml_p11_in_rr"
+	],
+	"dcplesb132": [
+		"val_amq_p12_xlate_audit",
+		"val_cml_p12_router_cat",
+		"val_cml_p12_xlate_ad",
+		"val_cml_p12_xlate_cvr2",
+		"val_cml_p12_xlate_oe",
+		"val_cml_p12_xlate_oth",
+		"val_cml_p12_xlate_rr",
+		"val_cml_p12_xlate_ssr2"
+	],
+	"dcplesb143": [
+		"ent_amq_p13_xlate_audit",
+		"ent_cml_p13_cbr_bay",
+		"ent_cml_p13_cbr_bay2",
+		"ent_cml_p13_cbr_val",
+		"ent_cml_p13_cbr_val2",
+		"ent_cml_p13_cbr_xrr",
+		"ent_cml_p13_router_cat",
+		"ent_cml_p13_xlate_all",
+		"ent_cml_p13_xlate_cat"
+	],
+	"dcplesb120": [
+		"bay_amq_p10_in_audit",
+		"bay_amq_p10_in_biobkr",
+		"bay_amq_p10_in_bkr",
+		"bay_cml_p10_ansible_mgmt",
+		"bay_cml_p10_in_ad",
+		"bay_cml_p10_in_oe",
+		"bay_cml_p10_in_oth",
+		"bay_cml_p10_in_rr"
+	],
+	"dcplesb131": [
+		"val_amq_p11_in_audit",
+		"val_amq_p11_in_biobkr",
+		"val_amq_p11_in_bkr",
+		"val_cml_p11_in_ad",
+		"val_cml_p11_in_oe",
+		"val_cml_p11_in_oth",
+		"val_cml_p11_in_rr"
+	],
+	"dcplesb142": [
+		"ent_amq_p12_xlate_audit",
+		"ent_cml_p12_cbr_bay",
+		"ent_cml_p12_cbr_bay2",
+		"ent_cml_p12_cbr_val",
+		"ent_cml_p12_cbr_val2",
+		"ent_cml_p12_cbr_xrr",
+		"ent_cml_p12_router_cat",
+		"ent_cml_p12_xlate_all",
+		"ent_cml_p12_xlate_cat"
+	],
+	"dcplesb130": [
+		"val_amq_p10_in_audit",
+		"val_amq_p10_in_biobkr",
+		"val_amq_p10_in_bkr",
+		"val_cml_p10_in_ad",
+		"val_cml_p10_in_oe",
+		"val_cml_p10_in_oth",
+		"val_cml_p10_in_rr"
+	],
+	"dcplesb141": [
+		"ent_amq_p11_in_audit",
+		"ent_amq_p11_in_bkr",
+		"ent_amq_p11_in_catbkr",
+		"ent_amq_p11_in_epicbkr",
+		"ent_cml_p11_in_ad",
+		"ent_cml_p11_in_all",
+		"ent_cml_p11_in_cat",
+		"ent_cml_p11_in_oe",
+		"ent_cml_p11_in_oth",
+		"ent_cml_p11_in_rr"
+	],
+	"dcplesb140": [
+		"ent_amq_p10_in_audit",
+		"ent_amq_p10_in_bkr",
+		"ent_amq_p10_in_catbkr",
+		"ent_amq_p10_in_epicbkr",
+		"ent_cml_p10_in_ad",
+		"ent_cml_p10_in_all",
+		"ent_cml_p10_in_cat",
+		"ent_cml_p10_in_oe",
+		"ent_cml_p10_in_oth",
+		"ent_cml_p10_in_rr"
+	],
+	"dcplesb125": [
+		"bay_amq_p15_out_audit",
+		"bay_amq_p15_out_biobkr",
+		"bay_amq_p15_out_bkr",
+		"bay_cml_p15_out_ad",
+		"bay_cml_p15_out_oe",
+		"bay_cml_p15_out_oth",
+		"bay_cml_p15_out_rr"
+	],
+	"dcplesb124": [
+		"bay_amq_p14_out_audit",
+		"bay_amq_p14_out_biobkr",
+		"bay_amq_p14_out_bkr",
+		"bay_cml_p14_out_ad",
+		"bay_cml_p14_out_oe",
+		"bay_cml_p14_out_oth",
+		"bay_cml_p14_out_rr"
+	],
+	"dcplesb135": [
+		"val_amq_p15_out_audit",
+		"val_amq_p15_out_biobkr",
+		"val_amq_p15_out_bkr",
+		"val_cml_p15_out_ad",
+		"val_cml_p15_out_oe",
+		"val_cml_p15_out_oth",
+		"val_cml_p15_out_rr"
+	],
+	"dcplesb123": [
+		"bay_amq_p13_xlate_audit",
+		"bay_cml_p13_router_cat",
+		"bay_cml_p13_xlate_ad",
+		"bay_cml_p13_xlate_ebr2",
+		"bay_cml_p13_xlate_oe",
+		"bay_cml_p13_xlate_oth",
+		"bay_cml_p13_xlate_pcr2",
+		"bay_cml_p13_xlate_rr",
+		"bay_cml_p13_xlate_wbr2"
+	],
+	"dcplesb134": [
+		"val_amq_p14_out_audit",
+		"val_amq_p14_out_biobkr",
+		"val_amq_p14_out_bkr",
+		"val_cml_p14_out_ad",
+		"val_cml_p14_out_oe",
+		"val_cml_p14_out_oth",
+		"val_cml_p14_out_rr"
+	],
+	"dcplesb145": [
+		"ent_amq_p15_out_audit",
+		"ent_amq_p15_out_bkr",
+		"ent_amq_p15_out_catbkr",
+		"ent_amq_p15_out_epicbkr",
+		"ent_cml_p15_out_ad",
+		"ent_cml_p15_out_all",
+		"ent_cml_p15_out_cat",
+		"ent_cml_p15_out_oe",
+		"ent_cml_p15_out_oth",
+		"ent_cml_p15_out_rr"
+	],
+	"dcplesb122": [
+		"bay_amq_p12_xlate_audit",
+		"bay_cml_p12_router_cat",
+		"bay_cml_p12_xlate_ad",
+		"bay_cml_p12_xlate_ebr2",
+		"bay_cml_p12_xlate_oe",
+		"bay_cml_p12_xlate_oth",
+		"bay_cml_p12_xlate_pcr2",
+		"bay_cml_p12_xlate_rr",
+		"bay_cml_p12_xlate_wbr2"
+	],
+	"dcplesb133": [
+		"val_amq_p13_xlate_audit",
+		"val_cml_p13_router_cat",
+		"val_cml_p13_xlate_ad",
+		"val_cml_p13_xlate_cvr2",
+		"val_cml_p13_xlate_oe",
+		"val_cml_p13_xlate_oth",
+		"val_cml_p13_xlate_rr",
+		"val_cml_p13_xlate_ssr2"
+	],
+	"dcplesb144": [
+		"ent_amq_p14_out_audit",
+		"ent_amq_p14_out_bkr",
+		"ent_amq_p14_out_catbkr",
+		"ent_amq_p14_out_epicbkr",
+		"ent_cml_p14_out_ad",
+		"ent_cml_p14_out_all",
+		"ent_cml_p14_out_cat",
+		"ent_cml_p14_out_oe",
+		"ent_cml_p14_out_oth",
+		"ent_cml_p14_out_rr"
+	]
+}

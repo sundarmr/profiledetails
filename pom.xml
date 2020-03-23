@@ -8,8 +8,8 @@
 		<version>14</version>
 	</parent>
 	<groupId>org.redhat.fabric</groupId>
-	<artifactId>profiledetails-local</artifactId>
-	<version>2.0.194-Snapshot</version>
+	<artifactId>profiledetails</artifactId>
+	<version>3.0.0-Release</version>
 	<packaging>bundle</packaging>
 	
 	<dependencies>
