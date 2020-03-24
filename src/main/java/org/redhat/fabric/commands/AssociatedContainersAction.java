@@ -207,8 +207,6 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	@Override
 	protected Object doExecute() throws Exception {
 		ProfileService profileService = fabricService.adapt(ProfileService.class);
-		List<String> versions = profileService.getVersions();
-		Map<String, Profiles> masterContainerMap = null;
 		PrintStream out = System.out;
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -532,7 +530,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 		ExecutorService containerExecutorService = Executors.newFixedThreadPool(oldConfiguration.size());
 		final CountDownLatch containerCountDownLatch = new CountDownLatch(oldConfiguration.size());
-
+		final List<String> profilesToSynch = new ArrayList<String>();
 		for (final EnsembleContainer oldContainer : oldConfiguration) {
 
 			if (!oldContainer.getContainerName().equalsIgnoreCase(ignoreContainer)) {
@@ -642,7 +640,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 								}
 
 								if (checkContainers(createContainers)) {
-									Container container = fabricService.getContainer(containerName);
+									//Container container = fabricService.getContainer(containerName);
 									// stopContainer(container);
 									// LOG.info("Profiles {} have been added to container {} ",
 									// container.getProfileIds(),
@@ -682,7 +680,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 									synchProfiles(fabricService, oldContainer.getProfiles(),
 											newEnsembleontainer.getProfiles(), newContainer.getProfileIds(),
-											newContainer);
+											newContainer, profilesToSynch);
+
 									LOG.debug("New container {} created with profiles {}", newContainer.getId(),
 											newContainer.getProfileIds());
 								}
@@ -718,9 +717,6 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 						return createContainers;
 					}
 
-					private void stopContainer(Container container) {
-						fabricService.stopContainer(container);
-					}
 				});
 			} else {
 				LOG.info("Skipping container {}", ignoreContainer);
@@ -732,109 +728,46 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		} catch (Exception e) {
 			LOG.warn("Issue with Container creation thread {}", e.getMessage());
 		}
+
+		if (profilesToSynch.size() > 0) {
+			List uniqueProfileNamesObj = profilesToSynch.stream().distinct()
+					.collect(java.util.stream.Collectors.toList());
+			final List<ProfileDetails> uniqueProfiles = getUniqueProfiles(oldConfiguration);
+			List<String> uniqueProfileNames = (ArrayList<String>) uniqueProfileNamesObj;
+			LOG.info(" profilesToBeSynched {} {} {}  ", uniqueProfileNames, uniqueProfileNames.size(),
+					uniqueProfiles.size());
+			containerExecutorService = Executors.newFixedThreadPool(uniqueProfileNames.size());
+			for (final String profile : uniqueProfileNames) {
+				containerExecutorService.submit(new Runnable() {
+					@Override
+					public void run() {
+						for (ProfileDetails profileDetail : uniqueProfiles) {
+							if (profileDetail.getProfileName().equalsIgnoreCase(profile)) {
+								synchProfile(profileDetail, profile);
+								break;
+							}
+						}
+
+					}
+				});
+			}
+
+		}
+		containerExecutorService.shutdown();
 		// restartContainers(oldConfiguration);
 	}
 
-	private void restartContainers(List<EnsembleContainer> oldConfiguration) {
-
-		List<String> amqContainers = new ArrayList<String>();
-		List<String> otherContainers = new ArrayList<String>();
-
+	private List<ProfileDetails> getUniqueProfiles(List<EnsembleContainer> oldConfiguration) {
+		List<ProfileDetails> profileDetails = new ArrayList<ProfileDetails>();
 		for (EnsembleContainer container : oldConfiguration) {
-			String containerName = getContainerName(container.getContainerName());
-			if (containerName.contains("amq")) {
-				amqContainers.add(containerName);
-			} else {
-				otherContainers.add(containerName);
-			}
+			profileDetails.addAll(new ArrayList<ProfileDetails>(container.getProfiles()));
+
 		}
-
-		ExecutorService amqExecutorService = null;
-		CountDownLatch amqcountDownLatch = null;
-		ExecutorService otherContainerService = null;
-		CountDownLatch otherContainerLatch = null;
-
-		if (amqContainers.size() > 0) {
-			amqExecutorService = Executors.newFixedThreadPool(amqContainers.size());
-			amqcountDownLatch = new CountDownLatch(amqContainers.size());
-			startContainers(amqExecutorService, amqcountDownLatch, amqContainers);
-
-			try {
-				amqcountDownLatch.await();
-			} catch (Exception e) {
-				LOG.error("Error when waiting for amq containers to start {}", e.getMessage());
-			}
-			amqExecutorService.shutdown();
-		}
-		if (otherContainers.size() > 0) {
-			otherContainerService = Executors.newFixedThreadPool(otherContainers.size());
-			otherContainerLatch = new CountDownLatch(otherContainers.size());
-			startContainers(otherContainerService, otherContainerLatch, otherContainers);
-			try {
-				otherContainerLatch.await();
-			} catch (Exception e) {
-				LOG.error("Error when waiting for other containers to start {}", e.getMessage());
-			}
-			otherContainerService.shutdown();
-		}
-
+		List deduplicates = profileDetails.stream().distinct().collect(java.util.stream.Collectors.toList());
+		return ((ArrayList<ProfileDetails>) deduplicates);
 	}
 
-	public void stopContainers(final ExecutorService service, final CountDownLatch countDownLatch,
-			final List<String> containerNames) {
-		for (final String containerName : containerNames) {
-			service.submit(new Runnable() {
-
-				@Override
-				public void run() {
-					try {
-						Container container = fabricService.getContainer(containerName);
-						if (container != null) {
-							LOG.info("Container {} provision status is {}", container.getId(),
-									container.getProvisionStatus());
-						}
-
-						if (container != null && (container.getProvisionStatus().contains("error")
-								|| (container.getProvisionStatus() == null || !container.isEnsembleServer()
-										|| container.getProvisionStatus().equals("")))) {
-							fabricService.stopContainer(containerName, true);
-						}
-					} catch (Exception e) {
-						LOG.warn("Error when trying to restart the container {}", e.getMessage());
-					} finally {
-						countDownLatch.countDown();
-					}
-
-				}
-			});
-		}
-
-	}
-
-	public void startContainers(final ExecutorService service, final CountDownLatch countDownLatch,
-			final List<String> containerNames) {
-
-		for (final String containerName : containerNames) {
-			service.submit(new Runnable() {
-
-				@Override
-				public void run() {
-					try {
-						Container container = fabricService.getContainer(containerName);
-						if (container != null && !container.isAliveAndOK()) {
-
-							fabricService.startContainer(containerName, true);
-						}
-					} finally {
-						countDownLatch.countDown();
-					}
-
-				}
-			});
-		}
-
-	}
-
+	
 	private String getContainerName(String containerName) {
 
 		StringBuffer newContainerName = new StringBuffer();
@@ -976,19 +909,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			if (profile == null) {
 				for (ProfileDetails oldProfileDetails : profileDetails) {
 					if (oldProfileDetails.getProfileName().equalsIgnoreCase(profileId)) {
-						ProfileBuilder builder = ProfileBuilder.Factory.create(versionId, profileId);
-						builder.setParents(new ArrayList<String>(oldProfileDetails.getParents()));
-						builder.setBundles(new ArrayList<String>(oldProfileDetails.getBundles()));
-						builder.setFeatures(new ArrayList<String>(oldProfileDetails.getFeatures()));
-						if (oldProfileDetails.getConfigurations() != null) {
-							builder.setConfigurations(oldProfileDetails.getConfigurations());
-						}
-						builder.version(oldProfileDetails.getProfileVersion());
-						try {
-							profile = profileService.createProfile(builder.getProfile());
-						} catch (Exception e) {
-							LOG.info("Unable to create profile {}", profile);
-						}
+						buildAndCreateProfile(oldProfileDetails);
 					}
 				}
 			}
@@ -1001,9 +922,46 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		return profiles.toArray(new Profile[profiles.size()]);
 	}
 
-	public void synchProfiles(FabricService fabricService, ConcurrentHashSet<ProfileDetails> oldProfileDetails,
-			ConcurrentHashSet<ProfileDetails> newProfileDetails, List<String> containerProfiles,
-			Container newContainer) {
+	private Profile buildAndCreateProfile(ProfileDetails profileDetails) {
+
+		Profile profile = null;
+		ProfileBuilder builder = ProfileBuilder.Factory.create();
+		buildProfile(builder, profileDetails);
+		try {
+			profile = profileService.createProfile(builder.getProfile());
+		} catch (Exception e) {
+			LOG.info("Unable to create profile {}", profile);
+		}
+		return profile;
+	}
+
+	private Profile buildAndUpdateProfile(ProfileDetails profileDetails, Profile profile) {
+		Profile newProfile = null;
+		ProfileBuilder builder = ProfileBuilder.Factory.createFrom(profile);
+		try {
+			newProfile = profileService.updateProfile(builder.getProfile());
+		} catch (Exception e) {
+			LOG.info("Unable to create profile {}", profile);
+		}
+		return newProfile;
+	}
+
+	private void buildProfile(ProfileBuilder builder, ProfileDetails profileDetails) {
+		if (profileDetails.getParents() != null)
+			builder.setParents(new ArrayList<String>(profileDetails.getParents()));
+		if (profileDetails.getBundles() != null)
+			builder.setBundles(new ArrayList<String>(profileDetails.getBundles()));
+		if (profileDetails.getFeatures() != null)
+			builder.setFeatures(new ArrayList<String>(profileDetails.getFeatures()));
+		if (profileDetails.getConfigurations() != null) {
+			builder.setConfigurations(profileDetails.getConfigurations());
+		}
+		builder.version(profileDetails.getProfileVersion());
+	}
+
+	private void synchProfiles(FabricService fabricService, ConcurrentHashSet<ProfileDetails> oldProfileDetails,
+			ConcurrentHashSet<ProfileDetails> newProfileDetails, List<String> containerProfiles, Container newContainer,
+			List<String> profilesToSynch) {
 
 		ConcurrentHashSet<ProfileDetails> missingProfiles = new ConcurrentHashSet<ProfileDetails>();
 		List<String> missingProfileIds = new ArrayList<String>();
@@ -1065,66 +1023,34 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 						LOG.debug(" Old Profile {} and new Profile{} are same ", oldProfileDetail.getProfileName(),
 								newProfileDetail.getProfileName());
 					} else {
-						LOG.info("Old profile  and new profile  are not same for {}",
-								oldProfileDetail.getProfileName());
-
-						try {
-							// ProfileService profileService = fabricService.adapt(ProfileService.class);
-							Profile newProfile = profileService.getProfile(oldProfileDetail.getProfileVersion(),
-									oldProfileDetail.getProfileName());
-							ProfileBuilder builder = null;
-							if (newProfile == null) {
-
-								builder = ProfileBuilder.Factory.create(oldProfileDetail.getProfileVersion(),
-										oldProfileDetail.getProfileName());
-								builder.setParents(new ArrayList<String>(oldProfileDetail.getParents()));
-								builder.setBundles(new ArrayList<String>(oldProfileDetail.getBundles()));
-								builder.setFeatures(new ArrayList<String>(oldProfileDetail.getFeatures()));
-								if (oldProfileDetail.getConfigurations() != null) {
-									builder.setConfigurations(oldProfileDetail.getConfigurations());
-								}
-								builder.version(oldProfileDetail.getProfileVersion());
-								try {
-									profileService.createProfile(builder.getProfile());
-								} catch (Exception e) {
-									LOG.warn("Profile could not be created {}", oldProfileDetail.getProfileName());
-								}
-							} else {
-								LOG.info("Synching up profile details for {} with ", newProfile.getId());
-								builder = ProfileBuilder.Factory.createFrom(newProfile);
-								LOG.info("Acquired Profile Builder {}", builder);
-								if (builder != null) {
-									if (oldProfileDetail.getParents() != null)
-										builder.setParents(new ArrayList<String>(oldProfileDetail.getParents()));
-									if (oldProfileDetail.getBundles() != null)
-										builder.setBundles(new ArrayList<String>(oldProfileDetail.getBundles()));
-									if (oldProfileDetail.getFeatures() != null)
-										builder.setFeatures(new ArrayList<String>(oldProfileDetail.getFeatures()));
-									if (oldProfileDetail.getConfigurations() != null) {
-										LOG.info("synching up profile config {}", oldProfileDetail.getConfigurations());
-										builder.setConfigurations(oldProfileDetail.getConfigurations());
-									}
-
-									builder.version(oldProfileDetail.getProfileVersion());
-									try {
-										profileService.updateProfile(builder.getProfile());
-									} catch (Exception e) {
-
-										LOG.warn("Profile could not be updated {} ", newProfile.getId());
-									}
-								} else {
-									LOG.warn("profile builder could not be obtained");
-								}
-
-							}
-						} catch (Exception e) {
-							LOG.error("Profile {} could not be assigned to {} {} {}", oldProfileDetail.getProfileName(),
-									newContainer.getId(), newContainer.getProfileIds(), e.getMessage(), e);
-						}
+						//Not attempting to create synch the profile here 
+						//as there are multiple threads doing this operation
+						//and a same profile can be assigned to different 
+						//containers.
+						LOG.info("Marking profile {} to be synched up from container {}", newContainer.getId());
+						profilesToSynch.add(oldProfileDetail.getProfileName());
 					}
 
 				}
 			}
+		}
+
+	}
+
+	public void synchProfile(ProfileDetails oldProfileDetail, String profileId) {
+
+		LOG.info("Old profile  and new profile  are not same for {}", oldProfileDetail.getProfileName());
+
+		try {
+			// ProfileService profileService = fabricService.adapt(ProfileService.class);
+			Profile newProfile = profileService.getProfile(oldProfileDetail.getProfileVersion(),
+					oldProfileDetail.getProfileName());
+			LOG.info("Synching up profile details for {} with ", newProfile.getId());
+
+			buildAndUpdateProfile(oldProfileDetail, newProfile);
+
+		} catch (Exception e) {
+			LOG.error("Profile {} could not be updated to {} ", oldProfileDetail.getProfileName(), e.getMessage(), e);
 		}
 
 	}
