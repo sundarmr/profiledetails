@@ -210,7 +210,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		PrintStream out = System.out;
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-		if (checkAndRestartContainers != null) {
+		if ("true".equalsIgnoreCase(checkAndRestartContainers)) {
 			checkAndRestartContainers();
 		} else {
 
@@ -242,7 +242,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 						file.setReadable(true, false);
 						LOG.info("Config Written to file {} ", storeFile);
 					} catch (Exception e) {
-						out.print(e.getMessage());
+						System.err.println(Ansi.ansi().fg(Color.RED).a(e.getMessage()).toString());
 					}
 				} else {
 					out.print(configString);
@@ -261,6 +261,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 					getContainersToChange(profileService, filePath, ensembleContainerList, out);
 
 				} catch (Exception e) {
+					System.err.println(Ansi.ansi().fg(Color.RED).a("Error when working to synch conainers {}")
+							.a(e.getMessage()).toString());
 					LOG.error("Error when working to synch conainers {}", e.getMessage(), e);
 				}
 				LOG.info("Time to synch up containers {}", System.currentTimeMillis() - currentTimeMillis);
@@ -274,8 +276,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 				LOG.info("Synching up Contexts.....");
 				if (filePath == null || jmxuser == null || jmxPassword == null) {
-					out.print("Input configuration file path , jmxuser or jxmpassword is missing");
-					System.exit(0);
+					System.err.println(Ansi.ansi().fg(Color.RED)
+							.a("Input configuration file path , jmxuser or jxmpassword is missing").toString());
 				}
 
 				HashSet<EnsembleContainer> ensembleContainerList = getDetails();
@@ -288,6 +290,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		return null;
 	}
 
+	/*
+	 * Checks if the container is stopped and restarts it , also checks if the
+	 * container is not managed and not ensemble server and recreates it
+	 */
 	private void checkAndRestartContainers() {
 
 		Container[] containers = fabricService.getContainers();
@@ -300,7 +306,6 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				java.util.Arrays.asList(Profile.class);
 			}
 			if (!container.isManaged() && !container.isEnsembleServer()) {
-				Profile[] profiles2 = container.getProfiles();
 				Set profiles = new HashSet<Profile>(java.util.Arrays.asList(container.getProfiles()));
 				CreateSshContainerOptions.Builder sshBuilder = CreateSshContainerOptions.builder()
 						.name(container.getId()).ensembleServer(container.isEnsembleServer()).resolver(resolver)
@@ -340,6 +345,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 	}
 
+	/*
+	 * Method to stop containers.
+	 */
 	private void stopContainers(List<Container> stoppedContainers, final ExecutorService service,
 			final CountDownLatch latch) {
 
@@ -359,7 +367,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			});
 		}
 	}
-
+	/*
+	 * Starts all the provided list of containers
+	 */
 	private void startContainers(List<Container> stoppedContainers, final ExecutorService service,
 			final CountDownLatch latch) {
 		for (final Container container : stoppedContainers) {
@@ -379,6 +389,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		}
 	}
 
+	/*
+	 * Synchs context by taking the source and attempting to start the contexts in
+	 * the destination
+	 */
 	private void synchContexts(HashSet<EnsembleContainer> ensembleContainerList, String filePath, PrintStream out,
 			ProfileService profileService) throws FileNotFoundException {
 		List<EnsembleContainer> oldConfiguration = null;
@@ -403,6 +417,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		}
 	}
 
+	/*
+	 * Recursive method to remove profiles with 6 second retry when profile lock
+	 * error occurs
+	 */
 	private void removeProfiles(Container container, List<String> profileNames, boolean isWaitNeeded) {
 		try {
 			if (container.isProvisioningPending() && isWaitNeeded) {
@@ -420,6 +438,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		container.removeProfiles(profileIds.toArray(new String[profileIds.size()]));
 	}
 
+	/*
+	 * Recursive method to add profiles container by waiting for 6 seconds if
+	 * profile lock error happens
+	 */
 	private void addProfiles(Container container, List<String> profileNames, boolean isWaitNeeded) {
 		LOG.debug(container.isProvisioningPending() == true ? " Wait for the container to be provisioned "
 				: "Adding Profiles {}", profileNames);
@@ -440,6 +462,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 	}
 
+	/*
+	 * Returns the profile names from the list of profiles by removing default
+	 * profie
+	 */
 	private List<String> getProfileNames(ConcurrentHashSet<ProfileDetails> profileDetails) {
 
 		List<String> profiles = new ArrayList<String>();
@@ -451,6 +477,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 		return profiles;
 	}
+	/*
+	 * Method enquires the container via Jolokia and gets all the running camel
+	 * contexts and routes
+	 */
 
 	private HashSet<Context> getContextList(PrintStream out, Container container) {
 
@@ -515,7 +545,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		}
 		return contexts;
 	}
-
+	/*
+	 * Synchs up the containers in destination based on source information
+	 */
 	public void getContainersToChange(final ProfileService profileService, final String oldConfigurationFile,
 			final HashSet<EnsembleContainer> ensembleContainerList, final PrintStream out)
 			throws FileNotFoundException {
@@ -640,7 +672,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 								}
 
 								if (checkContainers(createContainers)) {
-									//Container container = fabricService.getContainer(containerName);
+									// Container container = fabricService.getContainer(containerName);
 									// stopContainer(container);
 									// LOG.info("Profiles {} have been added to container {} ",
 									// container.getProfileIds(),
@@ -757,6 +789,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		// restartContainers(oldConfiguration);
 	}
 
+	/*
+	 * Provides a de-duplicated list of profile details by combining profiles assigned to 
+	 * all containers
+	 */
 	private List<ProfileDetails> getUniqueProfiles(List<EnsembleContainer> oldConfiguration) {
 		List<ProfileDetails> profileDetails = new ArrayList<ProfileDetails>();
 		for (EnsembleContainer container : oldConfiguration) {
@@ -767,7 +803,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		return ((ArrayList<ProfileDetails>) deduplicates);
 	}
 
-	
+	/*
+	 * Calculates the containername of the destination based on the environment 
+	 * zone it needs to be created
+	 */
 	private String getContainerName(String containerName) {
 
 		StringBuffer newContainerName = new StringBuffer();
@@ -839,7 +878,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 		return isSuccess;
 	}
-
+	/*
+	 * Reads the source configuration file and creates the list of containers with all of
+	 * its configuration details
+	 */
 	public List<EnsembleContainer> readConfigFile(String oldConfigurationFile, PrintStream out)
 			throws FileNotFoundException {
 		List<EnsembleContainer> oldConfiguration = null;
@@ -873,7 +915,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		return oldConfiguration;
 	}
 
-	// Need to derive logic to associate hostname and containers
+	/*
+	 * Derives the host name based on the container , environment and zone names provided
+	 * this is where the respective container will be physically created
+	 */
 	public String getHost(List<String> hosts, String containerName) {
 
 		String[] split = containerName.split("_");
@@ -886,7 +931,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 		return serverName.toString();
 	}
-
+	/*
+	 * Gets all the profiles with the <code>names</code> and creates the missing profiles
+	 * using the <code>profileDetails</code>
+	 */
 	public Profile[] getProfiles(FabricService fabricService, String versionId, List<String> names,
 			ConcurrentHashSet<ProfileDetails> profileDetails, String containerName) {
 
@@ -922,6 +970,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		return profiles.toArray(new Profile[profiles.size()]);
 	}
 
+	/*
+	 * Creates the profile based on source details
+	 */
 	private Profile buildAndCreateProfile(ProfileDetails profileDetails) {
 
 		Profile profile = null;
@@ -934,7 +985,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		}
 		return profile;
 	}
-
+	/*
+	 * Updates the profile based on source details
+	 */
 	private Profile buildAndUpdateProfile(ProfileDetails profileDetails, Profile profile) {
 		Profile newProfile = null;
 		ProfileBuilder builder = ProfileBuilder.Factory.createFrom(profile);
@@ -945,7 +998,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		}
 		return newProfile;
 	}
-
+	
+	/*
+	 * Builds profiles using profile builder provided and source profile information
+	 */
 	private void buildProfile(ProfileBuilder builder, ProfileDetails profileDetails) {
 		if (profileDetails.getParents() != null)
 			builder.setParents(new ArrayList<String>(profileDetails.getParents()));
@@ -958,7 +1014,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		}
 		builder.version(profileDetails.getProfileVersion());
 	}
-
+	
+	/*
+	 * Checks the destination container and syncs up the destination profiles<code>newProfileDetails</code> as per the source<code>oldProfileDetails</code>
+	 */
 	private void synchProfiles(FabricService fabricService, ConcurrentHashSet<ProfileDetails> oldProfileDetails,
 			ConcurrentHashSet<ProfileDetails> newProfileDetails, List<String> containerProfiles, Container newContainer,
 			List<String> profilesToSynch) {
@@ -1023,10 +1082,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 						LOG.debug(" Old Profile {} and new Profile{} are same ", oldProfileDetail.getProfileName(),
 								newProfileDetail.getProfileName());
 					} else {
-						//Not attempting to create synch the profile here 
-						//as there are multiple threads doing this operation
-						//and a same profile can be assigned to different 
-						//containers.
+						// Not attempting to create synch the profile here
+						// as there are multiple threads doing this operation
+						// and a same profile can be assigned to different
+						// contai
 						LOG.info("Marking profile {} to be synched up from container {}", newContainer.getId());
 						profilesToSynch.add(oldProfileDetail.getProfileName());
 					}
@@ -1037,6 +1096,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 	}
 
+	/*
+	 * Compares the source and destination profiles and synches up the destination profile 
+	 * to match the source
+	 */
 	public void synchProfile(ProfileDetails oldProfileDetail, String profileId) {
 
 		LOG.info("Old profile  and new profile  are not same for {}", oldProfileDetail.getProfileName());
@@ -1054,7 +1117,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		}
 
 	}
-
+	/*
+	 * Gets the details of all the containers in all versions in the ensemble
+	 */
 	public HashSet<EnsembleContainer> getDetails() {
 
 		final HashSet<EnsembleContainer> ensembleContainers = new HashSet<EnsembleContainer>();
