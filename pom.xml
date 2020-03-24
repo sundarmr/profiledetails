@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>org.redhat.fabric</groupId>
 	<artifactId>profiledetails</artifactId>
-	<version>3.0.0-Release</version>
+	<version>3.0.1-Release</version>
 	<packaging>bundle</packaging>
 	
 	<dependencies>
