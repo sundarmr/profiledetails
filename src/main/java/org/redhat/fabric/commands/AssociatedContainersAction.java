@@ -409,8 +409,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 					ConcurrentHashSet<ProfileDetails> profiles = oldContainer.getProfiles();
 					Container container = fabricService.getContainer(getContainerName(oldContainer.getContainerName()));
 					List<String> profileNames = getProfileNames(profiles);
-					removeProfiles(container, profileNames, true);
-					addProfiles(container, profileNames, true);
+					removeProfiles(container, profileNames, true,10);
+					addProfiles(container, profileNames, true,10);
 
 				}
 			}
@@ -421,12 +421,16 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	 * Recursive method to remove profiles with 6 second retry when profile lock
 	 * error occurs
 	 */
-	private void removeProfiles(Container container, List<String> profileNames, boolean isWaitNeeded) {
+	private void removeProfiles(Container container, List<String> profileNames, boolean isWaitNeeded,int count) {
 		try {
 			if (container.isProvisioningPending() && isWaitNeeded) {
-				LOG.info("Container is provisioning waiting before retrying to remove profile");
+				LOG.info("Container {} is provisioning waiting before retrying {} time to remove profile",container.getId(),count);
 				Thread.sleep(6000l);
-				removeProfiles(container, profileNames, isWaitNeeded);
+				if(count > 0) {
+					count--;
+					removeProfiles(container, profileNames, isWaitNeeded,count);
+					
+				}
 			}
 		} catch (InterruptedException e) {
 			LOG.error("Unexpected Exception while waiting for container {} to provision", container.getId());
@@ -442,14 +446,17 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	 * Recursive method to add profiles container by waiting for 6 seconds if
 	 * profile lock error happens
 	 */
-	private void addProfiles(Container container, List<String> profileNames, boolean isWaitNeeded) {
+	private void addProfiles(Container container, List<String> profileNames, boolean isWaitNeeded,int count) {
 		LOG.debug(container.isProvisioningPending() == true ? " Wait for the container to be provisioned "
 				: "Adding Profiles {}", profileNames);
 		try {
 			if (container.isProvisioningPending() && isWaitNeeded) {
-				LOG.info("Container is provisioning waiting before retrying to add profile");
-				Thread.sleep(6000l);
-				addProfiles(container, profileNames, isWaitNeeded);
+				LOG.info("Container {} is provisioning waiting before retrying {} time to add profile",container.getId(),count);
+				Thread.sleep(10000l);
+				if(count>0) {
+					count--;
+					addProfiles(container, profileNames, isWaitNeeded,count);
+				}
 			}
 			// Let the container recover from the profile removal and
 			// fabric service get to know that it has happened.
