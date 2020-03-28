@@ -13,9 +13,9 @@ public class Context implements Serializable{
 	@SerializedName("CamelId")
 	private String contextId;
 	@SerializedName("TotalRoutes")
-	private String totalRoutes;
+	private int totalRoutes;
 	@SerializedName("StartedRoutes")
-	private String startedRoutes;
+	private int startedRoutes;
 	@SerializedName("State")
 	private String contextState;
 	public String getContextId() {
@@ -24,16 +24,16 @@ public class Context implements Serializable{
 	public void setContextId(String contextId) {
 		this.contextId = contextId;
 	}
-	public String getTotalRoutes() {
+	public int getTotalRoutes() {
 		return totalRoutes;
 	}
-	public void setTotalRoutes(String totalRoutes) {
+	public void setTotalRoutes(int totalRoutes) {
 		this.totalRoutes = totalRoutes;
 	}
-	public String getStartedRoutes() {
+	public int getStartedRoutes() {
 		return startedRoutes;
 	}
-	public void setStartedRoutes(String startedRoutes) {
+	public void setStartedRoutes(int startedRoutes) {
 		this.startedRoutes = startedRoutes;
 	}
 	public String getContextState() {
@@ -48,8 +48,8 @@ public class Context implements Serializable{
 		int result = 1;
 		result = prime * result + ((contextId == null) ? 0 : contextId.hashCode());
 		result = prime * result + ((contextState == null) ? 0 : contextState.hashCode());
-		result = prime * result + ((startedRoutes == null) ? 0 : startedRoutes.hashCode());
-		result = prime * result + ((totalRoutes == null) ? 0 : totalRoutes.hashCode());
+		result = prime * result + startedRoutes;
+		result = prime * result + totalRoutes;
 		return result;
 	}
 	@Override
@@ -71,15 +71,9 @@ public class Context implements Serializable{
 				return false;
 		} else if (!contextState.equals(other.contextState))
 			return false;
-		if (startedRoutes == null) {
-			if (other.startedRoutes != null)
-				return false;
-		} else if (!startedRoutes.equals(other.startedRoutes))
+		if (startedRoutes != other.startedRoutes)
 			return false;
-		if (totalRoutes == null) {
-			if (other.totalRoutes != null)
-				return false;
-		} else if (!totalRoutes.equals(other.totalRoutes))
+		if (totalRoutes != other.totalRoutes)
 			return false;
 		return true;
 	}
