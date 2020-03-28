@@ -18,6 +18,7 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,11 +27,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
@@ -62,6 +68,7 @@ import io.fabric8.api.VersionBuilder;
 import io.fabric8.api.ZooKeeperClusterService;
 import io.fabric8.boot.commands.support.AbstractContainerCreateAction;
 import io.fabric8.boot.commands.support.FabricCommand;
+import io.fabric8.common.util.Files;
 import io.fabric8.service.ssh.CreateSshContainerOptions;
 import io.fabric8.service.ssh.CreateSshContainerOptions.Builder;
 
@@ -77,6 +84,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	@Option(name = "--child", description = "If missing containers should be child (true ) or ssh (false ) ")
 	private String child;
 
+	@Option(name = "--contextFromFabric", description = "If contexts should be derived from fabric ")
+	private String contextFromFabric = "true";
+
 	@Option(name = "--jmxuser", description = "JmxUser", required = true)
 	private String jmxuser;
 
@@ -89,10 +99,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	@Option(name = "--remotePassword", description = "Remote user password to ssh to the host")
 	private String remotePassword;
 
-	@Option(name = "--hosts", description = "hosts on which containers need to be created", multiValued = true)
-	private List<String> hostsToCreateContainers;
-
-	@Option(name = "--synchContexts", description = "Should contexts be synched up takes \n 1. true : does synch along with profile synch activity \n2. false : does not synch up contexts \n3. only synchs contexts ")
+	@Option(name = "--synchContexts", description = "Should contexts be synched up takes \n1. true : does synch along with profile synch activity \n2. false : does not synch up contexts \n3. only synchs contexts ")
 	private String synchContexts;
 
 	@Option(name = "--private-key", description = "The path to the private key on the filesystem. Default is ~/.ssh/id_rsa on *NIX platforms or C:\\Documents and Settings\\<UserName>\\.ssh\\id_rsa on Windows.")
@@ -104,7 +111,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	@Option(name = "--noOfThreads", description = "No of threads to execute")
 	private int noOfThreads = 10;
 
-	@Option(name = "--storeFile", description = "Path to write the config file defaults to /tmp/config.json")
+	@Option(name = "--storeFile", description = "Path to write the config file ,defaults to /tmp/config.json")
 	private String storeFile = "/tmp/config.json";
 
 	@Option(name = "--zoneName", description = "which zone are the containers being created in")
@@ -113,36 +120,34 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	@Option(name = "--environment", description = "environments test-t , dev-d production-p and staging -s")
 	private String environment;
 
-	@Option(name = "--ignoreContainer", description = "the container in which the management code is runningge")
-	private String ignoreContainer;
-
 	@Option(name = "--path", description = "Path where the container is to be created in remote server")
 	private String path = "/ifs/fuse/";
 
-	@Option(name = "--checkAndRestartOnly", description = "Path where the container is to be created in remote server")
-	private String checkAndRestartContainers;
+	@Option(name = "--checkAndRestartOnly", description = "When provided the code will attempt to check the health of the containers and restart them ")
+	private Boolean checkAndRestartContainers = false;
 
 	@Option(name = "--baseVersion", description = "Ensembles base version from which other versions are derived")
 	private String baseVersion = "1.0";
 
-	@Option(name = "--autoRecheckCount", description = "No of times the thread checks to see if all the containers have started")
+	@Option(name = "--autoRecheckCount", description = "No of times the background thread checks to see if all the containers have started")
 	private Integer autoRecheckCount = 10;
 
-	@Option(name = "--runStatusCheck", description = "The code will automatically run the background for 100 minutes and check for the status of the containers every 10 minutes and restart the containers where applicable")
+	@Option(name = "--runStatusCheck", description = "The code will automatically run the background for <code>statusCheckInterval*autoRecheckCount</code> milliseconds\nand check for the status of the containers every <code>statusCheckInterval</code> for <code>autoRecheckCount</code>\ntimes and restart the containers where applicable")
 	private String runStatusCheck;
 
-	@Option(name = "--demoRun", required = true, description = "Simulates the actual actions that will be run")
-	private Boolean demoRun;
-	
-	@Option(name = "--statusCheckInterval",  description = "Time Interval to check  the status of the containers after creation")
-	private long statusCheckInterval=600000L;
+	@Option(name = "--demoRun", description = "Simulates the actual actions that will be run if provided")
+	private Boolean demoRun = false;
 
+	@Option(name = "--statusCheckInterval", description = "Time Interval to check  the status of the containers after creation")
+	private long statusCheckInterval = 600000L;
+
+	static int count = 2;
+
+	// Add and remove the profiles as you see fit
 	static final List<String> ignoreProfiles = new ArrayList<String>() {
 		{
 
 			add("openshift");
-			add("shss_shss_ansible");
-			add("default");
 			add("fabric-ensemble-0000-1");
 			add("fabric");
 			add("fabric-ensemble-0001");
@@ -151,14 +156,12 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			add("fabric-ensemble-0001-3");
 			add("autoscale");
 			add("fabric-ensemble-0001-2");
-			add("acls");
 			add("fabric-ensemble-0001-4");
 			add("fabric-ensemble-0001-5");
 			add("feature-camel");
 			add("feature-camel-jms");
 			add("feature-cxf");
 			add("feature-fabric-web");
-			add("gateway-http");
 			add("feature-dosgi");
 			add("hawtio");
 			add("gateway-mq");
@@ -225,8 +228,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		PrintStream out = System.out;
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-		if ("true".equalsIgnoreCase(checkAndRestartContainers)) {
+		if (checkAndRestartContainers) {
 			checkAndRestartContainers();
+			runStatusCheck = "false";
 		} else {
 
 			if (child != null && filePath != null) {
@@ -236,11 +240,13 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 							"Remote User and Password / Private Key is needed  use options --remoteUser and --remotePassword\n")
 							.fg(Ansi.Color.DEFAULT).toString());
 				}
+				runStatusCheck = "false";
 			}
 			if (child != null && filePath == null) {
 				System.out.println(Ansi.ansi().fg(Color.RED).a("Warning Executing Command: ").a(
 						"Generating configuration file , if the intention of using the command is to synch then please provide the path to the configuraiton file\n")
 						.fg(Ansi.Color.DEFAULT).toString());
+				runStatusCheck = "false";
 			}
 			if (filePath == null) {
 				long currentTimeMillis = System.currentTimeMillis();
@@ -264,8 +270,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				}
 				long timeAfter = System.currentTimeMillis();
 				LOG.info("Execution time is {}", (timeAfter - currentTimeMillis) / 1000);
-				if ("true".equalsIgnoreCase(runStatusCheck))
-					(new StatusCheck()).run();
+				runStatusCheck = "false";
 			}
 
 			else if (filePath != null && !filePath.isEmpty() && !"only".equalsIgnoreCase(synchContexts)) {
@@ -300,7 +305,21 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				HashSet<EnsembleContainer> ensembleContainerList = getDetails();
 
 				synchContexts(ensembleContainerList, filePath, out, profileService);
+
 			}
+		}
+		if ("true".equalsIgnoreCase(runStatusCheck)) {
+			LOG.info("Will be checking for container status every {} minutes", (statusCheckInterval / (60 * 1000)));
+			Thread.sleep(statusCheckInterval);
+			Executors.newSingleThreadExecutor().submit(new Runnable() {
+
+				@Override
+				public void run() {
+					statusCheck(autoRecheckCount);
+				}
+
+			});
+
 		}
 		// out.print( gson.toJson(containersToChange) );
 
@@ -320,7 +339,6 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			if (container.getProvisionStatus().contains("error") || container.getProvisionStatus().equals("")
 					|| !container.isAlive() || container.getProvisionStatus().contains("stop")) {
 				stoppedContainers.add(container);
-				java.util.Arrays.asList(Profile.class);
 			}
 			if (!container.isManaged() && !container.isEnsembleServer()) {
 				Set profiles = new HashSet<Profile>(java.util.Arrays.asList(container.getProfiles()));
@@ -335,6 +353,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 						.version(container.getVersion().getId()).profiles(profiles)
 						.dataStoreProperties(getDataStoreProperties()).uploadDistribution(false).path(path)
 						.waitForProvision(false);
+
 				fabricService.destroyContainer(container, true);
 				fabricService.createContainers(sshBuilder.build());
 			}
@@ -435,15 +454,20 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		for (EnsembleContainer newContainer : ensembleContainerList) {
 			if (oldConfiguration.contains(newContainer)) {
 				EnsembleContainer oldContainer = oldConfiguration.get(oldConfiguration.indexOf(newContainer));
-				if (oldContainer.getContexts()!=null && !oldContainer.getContexts().equals(newContainer.getContexts())) {
+				if (oldContainer.getContexts() != null
+						&& !oldContainer.getContexts().equals(newContainer.getContexts())) {
 					contextContainers.add(oldContainer);
 				}
 			}
 		}
-		if(contextContainers.size() > 0 )
-			LOG.info("The containers {} have differences in contexts ", contextContainers);
-		else
-			LOG.info("No context differences found" );
+		if (contextContainers.size() > 0) {
+			List<String> containerNames = new ArrayList<String>();
+			for (EnsembleContainer container : contextContainers) {
+				containerNames.add(container.getContainerName());
+			}
+			LOG.info("The containers {} have differences in contexts ", containerNames);
+		} else
+			LOG.info("No context differences found");
 		if (contextContainers.size() > 0 && !demoRun) {
 			ExecutorService contextService = Executors.newFixedThreadPool(contextContainers.size());
 			for (final EnsembleContainer ensembleContainer : contextContainers) {
@@ -493,8 +517,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				: "Adding Profiles {}", profileNames);
 		try {
 			Profile[] profs = FabricCommand.getExistingProfiles(fabricService, container.getVersion(), profileNames);
-			container.setProfiles(profs);
 
+			container.setProfiles(profs);
 			fabricService.startContainer(container, true);
 
 		} catch (Exception e) {
@@ -517,15 +541,14 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			profiles.remove("default");
 		return profiles;
 	}
-	/*
-	 * Method enquires the container via Jolokia and gets all the running camel
-	 * contexts and routes
-	 */
 
-	private HashSet<Context> getContextList(Container container) {
+	/*
+	 * Gets the context details from JMX bean by using jolokia
+	 */
+	private void getContextsFromJmx(Container container, HashSet<Context> contexts) {
 
 		Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
-		HashSet<Context> contexts = new HashSet<Context>();
+
 		StringBuilder sb = new StringBuilder();
 
 		if (container.isAlive() && !container.isEnsembleServer() && container.isManaged()) {
@@ -583,7 +606,81 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				LOG.info("Skipping the response that is error for container {}", container.getId(), e.getMessage());
 			}
 		}
+
+	}
+
+	/*
+	 * Gets the context details from Fabric by using route-list command
+	 */
+	private void getContextsFromFabric(Container container, HashSet<Context> contextList) {
+
+		try {
+			Object execute = null;
+			execute = session.execute("fabric:container-connect " + container.getId()
+					+ " route-list | tac -f /tmp/route" + container.getId() + ".txt");
+			if (execute != null) {
+				try {
+
+					List<String> readLines = Files.readLines(new File("/tmp/routecodecontainer2.txt"));
+					System.out.println(readLines.size());
+					if (readLines != null && readLines.size() > 3) {
+						int count = 0;
+						for (String line : readLines) {
+							if (count > 2) {
+								line = line.replaceAll("\\s{2,}", " ").trim();
+								List<String> splitLine = Arrays.asList(line.split(" "));
+								boolean isMatch = false;
+								for (Context context : contextList) {
+									if (context.getContextId().equalsIgnoreCase(splitLine.get(0))) {
+										if (splitLine.get(2).toLowerCase().equalsIgnoreCase("started")) {
+											context.setStartedRoutes(context.getStartedRoutes() + 1);
+										}
+										context.setTotalRoutes(context.getTotalRoutes() + 1);
+										isMatch = true;
+									}
+
+								}
+								if (!isMatch) {
+									Context context = new Context();
+									context.setTotalRoutes(1);
+									if (splitLine.get(2).toLowerCase().equalsIgnoreCase("started"))
+										context.setStartedRoutes(1);
+									context.setContextState("Started");
+									context.setContextId(splitLine.get(0));
+									contextList.add(context);
+								}
+							}
+							count++;
+						}
+					}
+
+				} catch (Exception e) {
+					LOG.warn("Error when getting contexts {}", e.getMessage());
+				}
+			} else {
+				LOG.info("No Contexts found");
+			}
+
+		} catch (Exception e) {
+			LOG.error(e.getMessage(), e);
+		}
+
+	}
+	/*
+	 * Method enquires the container via Jolokia and gets all the running camel
+	 * contexts and routes
+	 */
+
+	private HashSet<Context> getContextList(Container container) {
+		HashSet<Context> contexts = new HashSet<Context>();
+		if ("false".equalsIgnoreCase(contextFromFabric)) {
+			getContextsFromJmx(container, contexts);
+		} else {
+			getContextsFromFabric(container, contexts);
+		}
+		LOG.info("{}", contexts);
 		return contexts;
+
 	}
 
 	/*
@@ -604,6 +701,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		ExecutorService containerExecutorService = Executors.newFixedThreadPool(oldConfiguration.size());
 		final CountDownLatch containerCountDownLatch = new CountDownLatch(oldConfiguration.size());
 		final List<String> profilesToSynch = new ArrayList<String>();
+		final String ignoreContainer = fabricService.getCurrentContainerName();
 		for (final EnsembleContainer oldContainer : oldConfiguration) {
 
 			if (!oldContainer.getContainerName().equalsIgnoreCase(ignoreContainer)) {
@@ -612,6 +710,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 					@Override
 					public void run() {
 						try {
+							// To get the equivalent containe names in the current zone and environment
 							final String containerName = getContainerName(oldContainer.getContainerName());
 
 							Container newContainer = null;
@@ -627,10 +726,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 								if (Boolean.valueOf(child)) {
 									CreateChildContainerOptions.Builder builder = CreateChildContainerOptions.builder()
-											.name(containerName)
-											// TODO: what if parent also does not exist
-											// Write a recursive function to get this done ???
-											.parent(oldContainer.getParent()).ensembleServer(false)
+											.name(containerName).parent(oldContainer.getParent()).ensembleServer(false)
 											.zookeeperUrl(fabricService.getZookeeperUrl())
 											.zookeeperPassword(fabricService.getZookeeperPassword())
 											.jmxPassword(jmxPassword).jmxUser(jmxuser)
@@ -643,13 +739,14 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 									}
 
 								} else {
-									String pickHost = getHost(hostsToCreateContainers, oldContainer.getContainerName());
+									String pickHost = getHost(oldContainer.getContainerName());
 
 									LOG.info("Container  {}  will be created on  {}",
 											getContainerName(oldContainer.getContainerName()), pickHost);
 
 									String actualPath = null;
 									if (containerName.contains("amq")) {
+										// Version needs to be parameterized
 										StringBuffer pathBuffer = new StringBuffer();
 										pathBuffer.append(path).append("/amq/630434");
 										actualPath = pathBuffer.toString();
@@ -667,8 +764,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 									Profile[] availableProfiles = null;
 									try {
-										availableProfiles = getProfiles(fabricService, oldContainer.getVersion(),
-												associatedProfiles, oldProfieDetails, oldContainer.getContainerName());
+										availableProfiles = getProfiles(oldContainer.getVersion(), associatedProfiles,
+												oldProfieDetails, oldContainer.getContainerName());
 										associatedProfiles.clear();
 
 										for (Profile profile : availableProfiles) {
@@ -696,7 +793,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 										if (requiredVersion != null && requiredVersion.getId()
 												.equalsIgnoreCase(oldContainer.getVersion())) {
-											createVersionIfDoesnotExist(oldContainer.getVersion(), profileService);
+											createVersionIfDoesnotExist(oldContainer.getVersion());
 										}
 
 										CreateSshContainerOptions.Builder sshBuilder = CreateSshContainerOptions
@@ -731,28 +828,19 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 										LOG.debug("Synching up newEnsemble Container {} with {}", containerName,
 												oldContainer.getContainerName());
-										newEnsembleontainer = newEnsemble;
+										LOG.debug("Synching existing container {} ", newEnsemble.getContainerName());
+
+										synchProfiles(oldContainer.getProfiles(), newEnsemble.getProfiles(),
+												newContainer, profilesToSynch);
+										LOG.debug("New container {} created with profiles {}", newContainer.getId(),
+												newContainer.getProfileIds());
+
 										break;
 									}
 								}
 								LOG.debug(" Container found {}",
 										newEnsembleontainer == null ? "" : newEnsembleontainer.getContainerName());
-								if (newEnsembleontainer != null) {
-									// public void synchProfiles(FabricService fabricService,
-									// ConcurrentHashSet<ProfileDetails> oldProfileDetails,
-									// ConcurrentHashSet<ProfileDetails> newProfileDetails, List<String>
-									// containerProfiles) {
-									LOG.debug("Synching existing container {} ",
-											newEnsembleontainer.getContainerName());
 
-									synchProfiles(fabricService, oldContainer.getProfiles(),
-											newEnsembleontainer.getProfiles(), newContainer.getProfileIds(),
-											newContainer, profilesToSynch);
-
-									LOG.debug("New container {} created with profiles {}", newContainer.getId(),
-											newContainer.getProfileIds());
-
-								}
 							}
 
 						} catch (Exception e) {
@@ -806,25 +894,80 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			LOG.info(" profilesToBeSynched {} {} {}  ", uniqueProfileNames, uniqueProfileNames.size(),
 					uniqueProfiles.size());
 			if (uniqueProfileNames.size() > 0) {
-				containerExecutorService = Executors.newFixedThreadPool(uniqueProfileNames.size());
-				for (final String profile : uniqueProfileNames) {
-					containerExecutorService.submit(new Runnable() {
-						@Override
-						public void run() {
-							for (ProfileDetails profileDetail : uniqueProfiles) {
-								if (profileDetail.getProfileName().equalsIgnoreCase(profile)) {
-									synchProfile(profileDetail, profile);
-									break;
+				final ProfileService profileSercv = fabricService.adapt(ProfileService.class);
+				BlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(uniqueProfileNames.size(), true);
+				RejectedExecutionHandler handler = new ThreadPoolExecutor.CallerRunsPolicy();
+				List<String> containers = new ArrayList<String>();
+				for (final ProfileDetails profile : uniqueProfiles) {
+					Container[] associatedContainers = fabricService
+							.getAssociatedContainers(profile.getProfileVersion(), profile.getProfileName());
+					if (associatedContainers != null) {
+						for (Container cont : associatedContainers) {
+							if (!containers.contains(cont.getId())) {
+								containers.add(cont.getId());
+							}
+						}
+					}
+				}
+				ExecutorService newFixedThreadPool = Executors.newFixedThreadPool(containers.size());
+				final CountDownLatch latch = new CountDownLatch(containers.size());
+				for (final String containerName : containers) {
+					try {
+						newFixedThreadPool.submit(new Runnable() {
+
+							@Override
+							public void run() {
+								try {
+									fabricService.stopContainer(containerName);
+								} catch (Exception e) {
+
+								} finally {
+									latch.countDown();
 								}
 							}
-
-						}
-					});
+						});
+					} catch (Exception e) {
+						LOG.error("unable to start container");
+					}
 				}
+				try {
+					latch.await();
+				} catch (Exception e) {
+
+				}
+				LOG.info("All the containers were stopped ");
+				ExecutorService executor = new ThreadPoolExecutor(uniqueProfileNames.size(), uniqueProfileNames.size(),
+						0L, TimeUnit.MILLISECONDS, queue, handler);
+				final CountDownLatch profileSynchLatch = new CountDownLatch(uniqueProfileNames.size());
+				for (final String profile : uniqueProfileNames) {
+					for (final ProfileDetails profileDetail : uniqueProfiles) {
+						if (profileDetail.getProfileName().equalsIgnoreCase(profile)) {
+							executor.submit(new Runnable() {
+								@Override
+								public void run() {
+									try {
+										synchProfile(profileDetail, profile, profileSercv,
+												new AtomicInteger(autoRecheckCount));
+									} finally {
+										profileSynchLatch.countDown();
+									}
+								}
+							});
+							break;
+						}
+					}
+				}
+				try {
+					profileSynchLatch.await();
+				} catch (Exception e) {
+
+				}
+
+				checkAndRestartContainers();
+
 			}
 		}
 
-		shutDownExecutorService(containerExecutorService);
 	}
 
 	/*
@@ -850,7 +993,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		StringBuffer newContainerName = new StringBuffer();
 		try {
 			String[] split = containerName.split("_");
-
+			// optimize by replace with environment and zone instead of reconstructing
 			newContainerName.append(split[0]).append("_").append(split[1]).append("_").append(environment)
 					.append(containerFirstLetter.get(zoneName)).append(split[2].charAt(2)).append("_").append(split[3])
 					.append("_").append(split[4]);
@@ -865,7 +1008,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	/*
 	 * Creates a version provided if it does not exist or returns the version
 	 */
-	private Version createVersionIfDoesnotExist(String productionProfileVersion, ProfileService profileService) {
+	private Version createVersionIfDoesnotExist(String productionProfileVersion) {
 
 		Version requiredVersion = null;
 
@@ -943,7 +1086,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	 * Derives the host name based on the container , environment and zone names
 	 * provided this is where the respective container will be physically created
 	 */
-	public String getHost(List<String> hosts, String containerName) {
+	public String getHost(String containerName) {
 
 		String[] split = containerName.split("_");
 		LOG.debug("container host {}", containerName);
@@ -957,24 +1100,21 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	 * Gets all the profiles with the <code>names</code> and creates the missing
 	 * profiles using the <code>profileDetails</code>
 	 */
-	public Profile[] getProfiles(FabricService fabricService, String versionId, List<String> names,
+	public Profile[] getProfiles(String versionId, List<String> missingProfileIds,
 			ConcurrentHashSet<ProfileDetails> profileDetails, String containerName) {
 
 		LOG.info("Total profiles in source for container {} is  {}", containerName, profileDetails.size());
 
-		createVersionIfDoesnotExist(versionId, profileService);
+		createVersionIfDoesnotExist(versionId);
 
 		ProfileService profileService = fabricService.adapt(ProfileService.class);
 
 		List<Profile> allProfiles = null;
 		List<Profile> profiles = new ArrayList<>();
+
 		try {
 			allProfiles = profileService.getRequiredVersion(versionId).getProfiles();
-
-			if (names == null) {
-				return new Profile[0];
-			}
-			for (String profileId : names) {
+			for (String profileId : missingProfileIds) {
 				Profile profile = null;
 				for (Profile p : allProfiles) {
 					if (profileId.equals(p.getId())) {
@@ -982,24 +1122,16 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 						break;
 					}
 				}
-
-				if (profile == null && !demoRun) {
-					for (ProfileDetails oldProfileDetails : profileDetails) {
-						if (oldProfileDetails.getProfileName().equalsIgnoreCase(profileId)) {
-							buildAndCreateProfile(oldProfileDetails);
+				if (profile == null) {
+					for (ProfileDetails sourceProfileDetail : profileDetails) {
+						if (sourceProfileDetail.getProfileName().equalsIgnoreCase(profileId)) {
+							LOG.info("Creating the profile {} from source", profileId);
+							profile = buildAndCreateProfile(sourceProfileDetail);
+							break;
 						}
 					}
-
-					LOG.info("Acquired profiles {} for container {}", profiles.size(), containerName);
-				} else {
-					if (profile != null && !profile.getId().equalsIgnoreCase("default")
-							&& !demoRun) {
-						profiles.add(profile);
-					}
-					LOG.info("A profile with id {} will be created and associated to container {}", profileId,
-							containerName);
 				}
-
+				profiles.add(profile);
 			}
 		} catch (Exception e) {
 			if (!demoRun)
@@ -1019,7 +1151,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		try {
 			profile = profileService.createProfile(builder.getProfile());
 		} catch (Exception e) {
-			LOG.info("Unable to create profile {}", profile);
+			LOG.error("Unable to create profile {} ,{}", profile.getId(), e.getMessage());
 		}
 		return profile;
 	}
@@ -1030,10 +1162,12 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	private Profile buildAndUpdateProfile(ProfileDetails profileDetails, Profile profile) {
 		Profile newProfile = null;
 		ProfileBuilder builder = ProfileBuilder.Factory.createFrom(profile);
+		buildProfile(builder, profileDetails);
 		try {
+			ProfileService profileService = fabricService.adapt(ProfileService.class);
 			newProfile = profileService.updateProfile(builder.getProfile());
 		} catch (Exception e) {
-			LOG.info("Unable to create profile {}", profile);
+			LOG.info("Unable to update profile {} {}", profile.getId(), e.getMessage());
 		}
 		return newProfile;
 	}
@@ -1051,6 +1185,17 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		if (profileDetails.getConfigurations() != null) {
 			builder.setConfigurations(profileDetails.getConfigurations());
 		}
+		if (profileDetails.getAttributes() != null) {
+			builder.setAttributes(profileDetails.getAttributes());
+		}
+		if (profileDetails.getFabs() != null) {
+			builder.setFabs(profileDetails.getFabs());
+		}
+		if (profileDetails.getRepositories() != null) {
+			builder.setRepositories(profileDetails.getRepositories());
+		}
+		builder.identity(profileDetails.getProfileName());
+
 		builder.version(profileDetails.getProfileVersion());
 	}
 
@@ -1059,29 +1204,24 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	 * profiles<code>newProfileDetails</code> as per the
 	 * source<code>oldProfileDetails</code>
 	 */
-	private void synchProfiles(FabricService fabricService, ConcurrentHashSet<ProfileDetails> oldProfileDetails,
-			ConcurrentHashSet<ProfileDetails> newProfileDetails, List<String> containerProfiles, Container newContainer,
-			List<String> profilesToSynch) {
+	private void synchProfiles(ConcurrentHashSet<ProfileDetails> oldProfileDetails,
+			ConcurrentHashSet<ProfileDetails> newProfileDetails, Container newContainer, List<String> profilesToSynch) {
+
+		List<String> containerProfiles = newContainer.getProfileIds();
 
 		ConcurrentHashSet<ProfileDetails> missingProfiles = new ConcurrentHashSet<ProfileDetails>();
 		List<String> missingProfileIds = new ArrayList<String>();
 
 		LOG.debug("container {} Old profiles {} new profiles {}", newContainer.getId(), oldProfileDetails.size(),
 				newProfileDetails.size());
-		if (oldProfileDetails.size() > newProfileDetails.size()) {
 
-			for (ProfileDetails oldProfile : oldProfileDetails) {
-				boolean isMatch = false;
-				for (ProfileDetails newProfile : newProfileDetails) {
-					if (oldProfile.getProfileName().equalsIgnoreCase(newProfile.getProfileName())
-							&& !ignoreProfiles.contains(oldProfile.getProfileName())) {
-						isMatch = true;
-						break;
-					}
-				}
-				if (!isMatch) {
+		for (ProfileDetails oldProfile : oldProfileDetails) {
+			for (ProfileDetails newProfile : newProfileDetails) {
+				if (oldProfile.getProfileName().equalsIgnoreCase(newProfile.getProfileName())
+						&& !ignoreProfiles.contains(oldProfile.getProfileName())) {
 					missingProfiles.add(oldProfile);
 					missingProfileIds.add(oldProfile.getProfileName());
+					break;
 				}
 			}
 		}
@@ -1095,22 +1235,15 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			while (iterator.hasNext()) {
 				version = (iterator.next()).getProfileVersion();
 			}
-			Profile[] profiles2 = null;
+			Profile[] profilesToAdd = null;
 			try {
-				profiles2 = getProfiles(fabricService, version, missingProfileIds, missingProfiles,
-						newContainer.getId());
+				profilesToAdd = getProfiles(version, missingProfileIds, missingProfiles, newContainer.getId());
 			} catch (Exception e) {
 				LOG.warn("Exception when getting profiles {} ", e.getMessage());
 			}
-			if (profiles2 != null && !demoRun) {
-				newContainer.addProfiles(profiles2);
-				try {
-					fabricService.stopContainer(newContainer, true);
-					fabricService.startContainer(newContainer, true);
-				} catch (Exception e) {
-					LOG.error("Error after reassigning profiles {}", e.getMessage());
-				}
-			} 
+			if (profilesToAdd != null && !demoRun) {
+				newContainer.addProfiles(profilesToAdd);
+			}
 		}
 
 		for (ProfileDetails oldProfileDetail : oldProfileDetails) {
@@ -1125,36 +1258,144 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 						// as there are multiple threads doing this operation
 						// and a same profile can be assigned to different
 						// contai
-						LOG.info("Marking profile {} to be synched up from container {}", newContainer.getId());
+						// isEqual(oldProfileDetail,newProfileDetail);
+						LOG.info("Marking profile {} to be synched up from container {}",
+								oldProfileDetail.getProfileName(), newContainer.getId());
 						profilesToSynch.add(oldProfileDetail.getProfileName());
 					}
 
 				}
 			}
 		}
-		
+
+	}
+
+	private boolean isEqual(ProfileDetails oldProfileDetail, ProfileDetails obj) {
+
+		if (oldProfileDetail == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (oldProfileDetail.getClass() != obj.getClass()) {
+			return false;
+		}
+		ProfileDetails other = (ProfileDetails) obj;
+		if (oldProfileDetail.getAttributes() == null) {
+			if (other.getAttributes() != null) {
+				return false;
+			}
+		} else if (!oldProfileDetail.getAttributes().equals(other.getAttributes())) {
+			LOG.info("{} {} Attribs : {} \n{}", oldProfileDetail.getProfileName(), other.getProfileName(),
+					oldProfileDetail.getAttributes(), other.getAttributes());
+			return false;
+		}
+		if (oldProfileDetail.getBundles() == null) {
+			if (other.getBundles() != null)
+				return false;
+		} else if (!oldProfileDetail.getBundles().equals(other.getBundles())) {
+			LOG.info("{} {} Bundles : {} \n{}", oldProfileDetail.getProfileName(), other.getProfileName(),
+					oldProfileDetail.getBundles(), other.getBundles());
+			return false;
+		}
+		if (oldProfileDetail.getConfigurations() == null) {
+			if (other.getConfigurations() != null) {
+				return false;
+			}
+		} else if (!oldProfileDetail.getConfigurations().equals(other.getConfigurations())) {
+			LOG.info("{} {} Configs : {} \n{}", oldProfileDetail.getProfileName(), other.getProfileName(),
+					oldProfileDetail.getConfigurations(), other.getConfigurations());
+			return false;
+		}
+		if (oldProfileDetail.getFabs() == null) {
+			if (other.getFabs() != null)
+				return false;
+		} else if (!oldProfileDetail.getFabs().equals(other.getFabs())) {
+			LOG.info("{} {} Fabs : {} \n{}", oldProfileDetail.getProfileName(), other.getProfileName(),
+					oldProfileDetail.getFabs(), other.getFabs());
+			return false;
+		}
+		if (oldProfileDetail.getFeatures() == null) {
+			LOG.info("{} {} {} \n{}", oldProfileDetail.getRepositories(), other.getRepositories());
+			if (other.getFeatures() != null)
+				return false;
+		} else if (!oldProfileDetail.getFeatures().equals(other.getFeatures())) {
+			LOG.info("{} {} Features : {} \n{}", oldProfileDetail.getProfileName(), other.getProfileName(),
+					oldProfileDetail.getFeatures(), other.getFeatures());
+			return false;
+		}
+		if (oldProfileDetail.getParents() == null) {
+			if (other.getParents() != null)
+				return false;
+		} else if (!oldProfileDetail.getParents().equals(other.getParents())) {
+			LOG.info("{} {} Parents : {} \n{}", oldProfileDetail.getProfileName(), other.getProfileName(),
+					oldProfileDetail.getParents(), other.getParents());
+
+			return false;
+		}
+		if (oldProfileDetail.getProfileVersion() == null) {
+			if (other.getProfileVersion() != null)
+				return false;
+		} else if (!oldProfileDetail.getProfileVersion().equals(other.getProfileVersion())) {
+			LOG.info("{} {} Version : {} \n{}", oldProfileDetail.getProfileName(), other.getProfileName(),
+					oldProfileDetail.getProfileVersion(), other.getProfileVersion());
+			return false;
+		}
+		if (oldProfileDetail.getRepositories() == null) {
+			if (other.getRepositories() != null)
+				return false;
+		} else if (!oldProfileDetail.getRepositories().equals(other.getRepositories())) {
+			LOG.info("{} {} Repos : {} \n{}", oldProfileDetail.getProfileName(), other.getProfileName(),
+					oldProfileDetail.getRepositories(), other.getRepositories());
+			return false;
+		}
+		return true;
+
 	}
 
 	/*
 	 * Compares the source and destination profiles and synches up the destination
 	 * profile to match the source
 	 */
-	public void synchProfile(ProfileDetails oldProfileDetail, String profileId) {
+	public void synchProfile(ProfileDetails oldProfileDetail, String profileId, ProfileService profileService,
+			AtomicInteger count) {
 
 		LOG.info("Old profile  and new profile  are not same for {}", oldProfileDetail.getProfileName());
 
 		try {
-			// ProfileService profileService = fabricService.adapt(ProfileService.class);
-			Profile newProfile = profileService.getProfile(oldProfileDetail.getProfileVersion(),
-					oldProfileDetail.getProfileName());
-			LOG.info("Synching up profile details for {} with ", newProfile.getId());
+			boolean isError = false;
+			Profile newProfile = null;
+			try {
+				newProfile = profileService.getProfile(oldProfileDetail.getProfileVersion(),
+						oldProfileDetail.getProfileName());
+				LOG.info("Acquired the profile");
+			} catch (Exception e) {
+				isError = true;
+				if (e.getMessage() != null && e.getMessage().contains("lock")) {
+					try {
+						if (count.get() > 0) {
+							LOG.info("Will retry after a minute for {} more times", count.get());
+							count.decrementAndGet();
+							synchProfile(oldProfileDetail, profileId, profileService, count);
+						}
+					} catch (Exception e1) {
+						LOG.info(e1.getMessage());
+					}
+				}
+			}
 
-			buildAndUpdateProfile(oldProfileDetail, newProfile);
+			if (newProfile == null && !isError) {
+				buildAndCreateProfile(oldProfileDetail);
+			} else {
+				if (newProfile != null) {
+					buildAndUpdateProfile(oldProfileDetail, newProfile);
+				}
+			}
 
 		} catch (Exception e) {
-			LOG.error("Profile {} could not be updated to {} ", oldProfileDetail.getProfileName(), e.getMessage(), e);
+			LOG.error("Profile {} could not be updated to {} ", oldProfileDetail.getProfileName(), e.getMessage());
 		}
-
 	}
 
 	/*
@@ -1165,12 +1406,13 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		final HashSet<EnsembleContainer> ensembleContainers = new HashSet<EnsembleContainer>();
 
 		Container[] containers = fabricService.getContainers();
+
 		if (containers != null && containers.length > 0) {
 
 			final Set<EnsembleContainer> ensembleSet = ConcurrentHashMap.newKeySet();
 			ExecutorService containerExecutorService = Executors.newFixedThreadPool(containers.length);
 			final CountDownLatch latch = new CountDownLatch(containers.length);
-
+			final String ignoreContainer = fabricService.getCurrentContainerName();
 			for (final Container container : containers) {
 				containerExecutorService.submit(new Runnable() {
 					@Override
@@ -1239,52 +1481,64 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		}
 	}
 
-	public class StatusCheck extends Thread {
+	private void statusCheck(int count) {
 
-		public void run() {
-			restartContainers(autoRecheckCount);
+		Container[] containers = fabricService.getContainers();
+		final List<Container> restartList = new ArrayList<Container>();
+		for (Container container : containers) {
+			if (container.getProvisionStatus() != null && (container.getProvisionStatus().trim().equals("")
+					|| container.getProvisionStatus().equals(Container.PROVISION_ERROR)
+					|| container.getProvisionStatus().equals(Container.PROVISION_STOPPING)
+					|| container.getProvisionStatus().equals(Container.PROVISION_STOPPED))) {
+				restartList.add(container);
+			}
 		}
 
-		public void restartContainers(int count) {
-
-			Container[] containers = fabricService.getContainers();
-			final List<Container> restartList = new ArrayList<Container>();
-			for (Container container : containers) {
-				if (container.getProvisionStatus() != null && (container.getProvisionStatus().trim().equals("")
-						|| container.getProvisionStatus().equals(Container.PROVISION_ERROR)
-						|| container.getProvisionStatus().equals(Container.PROVISION_STOPPING)
-						|| container.getProvisionStatus().equals(Container.PROVISION_STOPPED))) {
-					restartList.add(container);
+		if (restartList.size() > 0) {
+			if (LOG.isInfoEnabled()) {
+				final List<String> restartListNames = new ArrayList<String>();
+				for (Container container : restartList) {
+					restartListNames.add(container.getId());
 				}
+				LOG.info("Containers to bne restarted are {}", restartListNames);
 			}
-			if (restartList.size() > 0) {
-				ExecutorService service = Executors.newFixedThreadPool(restartList.size());
-				for (final Container restartContainer : restartList) {
-					service.submit(new Runnable() {
+			ExecutorService service = Executors.newFixedThreadPool(restartList.size());
+			for (final Container restartContainer : restartList) {
+				service.submit(new Runnable() {
 
-						@Override
-						public void run() {
-							if (!restartContainer.getProvisionStatus().equalsIgnoreCase(Container.PROVISION_STOPPED)) {
+					@Override
+					public void run() {
+						if (!restartContainer.getProvisionStatus().equalsIgnoreCase(Container.PROVISION_STOPPED)) {
+
+							try {
 								fabricService.stopContainer(restartContainer, true);
+							} catch (Exception e) {
+								LOG.error("Unable to stop container {}", e.getMessage());
+							}
+							try {
 								fabricService.startContainer(restartContainer, true);
+							} catch (Exception e) {
+								LOG.error("Unable to start container {}", e.getMessage());
 							}
 						}
-					});
-
-				}
-				shutDownExecutorService(service);
-				try {
-					Thread.sleep(statusCheckInterval);
-					if (count > 1) {
-						restartContainers(count--);
 					}
-				} catch (InterruptedException e) {
-					LOG.error("Exception when waiting to check the status of the containers ", e.getMessage(), e);
+				});
+
+			}
+			shutDownExecutorService(service);
+			try {
+				Thread.sleep(statusCheckInterval);
+				if (count > 1) {
+					statusCheck(count--);
 				}
-			} else {
-				LOG.info("All the containers have been successfully configured ");
+			} catch (InterruptedException e) {
+				LOG.error("Exception when waiting to check the status of the containers ", e.getMessage(), e);
 			}
 
+		} else {
+			LOG.info("All the containers have been successfully configured ");
 		}
+
 	}
+
 }
