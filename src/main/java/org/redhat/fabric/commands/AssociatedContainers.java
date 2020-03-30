@@ -44,23 +44,21 @@ public class AssociatedContainers extends AbstractCommandComponent {
 
 	public static final String SCOPE_VALUE = "fabric";
 	public static final String FUNCTION_VALUE = "container-profile-synch";
-	public static final String DESCRIPTION = "Displays all profiles with associated containers and bundles list , provide an argument for a specific profile";
+	public static final String DESCRIPTION = "Displays all profiles with associated containers and bundles list , synchronizes the containers by either creating / updating them based on a provided config file";
 	@Reference(referenceInterface = FabricService.class)
 	private final ValidatingReference<FabricService> fabricService = new ValidatingReference<FabricService>();
-	
+
 	@Reference(referenceInterface = ZooKeeperClusterService.class)
-    private final ValidatingReference<ZooKeeperClusterService> clusterService = new ValidatingReference<ZooKeeperClusterService>();
+	private final ValidatingReference<ZooKeeperClusterService> clusterService = new ValidatingReference<ZooKeeperClusterService>();
 
 	// Optional Completers
-    @Reference(referenceInterface = ProfileCompleter.class, bind = "bindProfileCompleter", unbind = "unbindProfileCompleter")
-    private ProfileCompleter profileCompleter; // dummy field
-    @Reference(referenceInterface = ResolverCompleter.class, bind = "bindResolverCompleter", unbind = "unbindResolverCompleter")
-    private ResolverCompleter resolverCompleter;
-    @Reference(referenceInterface = VersionCompleter.class, bind = "bindVersionCompleter", unbind = "unbindVersionCompleter")
-    private VersionCompleter versionCompleter; // dummy field
- 
+	@Reference(referenceInterface = ProfileCompleter.class, bind = "bindProfileCompleter", unbind = "unbindProfileCompleter")
+	private ProfileCompleter profileCompleter; // dummy field
+	@Reference(referenceInterface = ResolverCompleter.class, bind = "bindResolverCompleter", unbind = "unbindResolverCompleter")
+	private ResolverCompleter resolverCompleter;
+	@Reference(referenceInterface = VersionCompleter.class, bind = "bindVersionCompleter", unbind = "unbindVersionCompleter")
+	private VersionCompleter versionCompleter; // dummy field
 
-	
 	@Activate
 	void activate() {
 		activateComponent();
@@ -71,63 +69,58 @@ public class AssociatedContainers extends AbstractCommandComponent {
 		deactivateComponent();
 	}
 
-
 	@Override
 	public Action createNewAction() {
 		assertValid();
-		return new AssociatedContainersAction(fabricService.get(),clusterService.get());
+		return new AssociatedContainersAction(fabricService.get(), clusterService.get());
 	}
-	
 
-    void bindFabricService(FabricService fabricService) {
-        this.fabricService.bind(fabricService);
-    }
+	void bindFabricService(FabricService fabricService) {
+		this.fabricService.bind(fabricService);
+	}
 
-    void unbindFabricService(FabricService fabricService) {
-        this.fabricService.unbind(fabricService);
-    }
-    
-    void bindClusterService(ZooKeeperClusterService clusterService) {
-        this.clusterService.bind(clusterService);
-    }
+	void unbindFabricService(FabricService fabricService) {
+		this.fabricService.unbind(fabricService);
+	}
 
-    void unbindClusterService(ZooKeeperClusterService clusterService) {
-        this.clusterService.unbind(clusterService);
-    }
-    
-    void bindRootContainerCompleter(RootContainerCompleter completer) {
-        bindCompleter(completer);
-    }
+	void bindClusterService(ZooKeeperClusterService clusterService) {
+		this.clusterService.bind(clusterService);
+	}
 
-    void unbindRootContainerCompleter(RootContainerCompleter completer) {
-        unbindCompleter(completer);
-    }
+	void unbindClusterService(ZooKeeperClusterService clusterService) {
+		this.clusterService.unbind(clusterService);
+	}
 
+	void bindRootContainerCompleter(RootContainerCompleter completer) {
+		bindCompleter(completer);
+	}
 
-    void bindResolverCompleter(ResolverCompleter completer) {
-        bindOptionalCompleter(completer);
-    }
+	void unbindRootContainerCompleter(RootContainerCompleter completer) {
+		unbindCompleter(completer);
+	}
 
-    void unbindResolverCompleter(ResolverCompleter completer) {
-        unbindOptionalCompleter(completer);
-    }
+	void bindResolverCompleter(ResolverCompleter completer) {
+		bindOptionalCompleter(completer);
+	}
 
-  
-   
-    void bindProfileCompleter(ProfileCompleter completer) {
-        bindCompleter(completer);
-    }
+	void unbindResolverCompleter(ResolverCompleter completer) {
+		unbindOptionalCompleter(completer);
+	}
 
-    void unbindProfileCompleter(ProfileCompleter completer) {
-        unbindCompleter(completer);
-    }
+	void bindProfileCompleter(ProfileCompleter completer) {
+		bindCompleter(completer);
+	}
 
-    void bindVersionCompleter(VersionCompleter completer) {
-        bindCompleter(completer);
-    }
+	void unbindProfileCompleter(ProfileCompleter completer) {
+		unbindCompleter(completer);
+	}
 
-    void unbindVersionCompleter(VersionCompleter completer) {
-        unbindCompleter(completer);
-    }
+	void bindVersionCompleter(VersionCompleter completer) {
+		bindCompleter(completer);
+	}
+
+	void unbindVersionCompleter(VersionCompleter completer) {
+		unbindCompleter(completer);
+	}
 
 }
