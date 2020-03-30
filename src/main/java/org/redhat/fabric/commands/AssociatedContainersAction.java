@@ -10,6 +10,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
@@ -38,6 +40,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.Validate;
 import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
 import org.apache.felix.gogo.commands.CompleterValues;
@@ -87,10 +90,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	@Option(name = "--contextFromFabric", description = "If contexts should be derived from fabric ")
 	private String contextFromFabric = "true";
 
-	@Option(name = "--jmxuser", description = "JmxUser", required = true)
+	@Option(name = "--jmxuser", description = "JmxUser")
 	private String jmxuser;
 
-	@Option(name = "--jmxPassword", description = "JmxPassword", required = true)
+	@Option(name = "--jmxPassword", description = "JmxPassword")
 	private String jmxPassword;
 
 	@Option(name = "--remoteUser", description = "Remote user in case if we need to create a missing container")
@@ -294,12 +297,17 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 					LOG.info("Time to synch up all contexts {}", System.currentTimeMillis() - currentTimeMillis);
 				}
 
-			} else if ("only".equalsIgnoreCase(synchContexts)) {
+			} else if ("only".equalsIgnoreCase(synchContexts) ) {
 
 				LOG.info("Synching up Contexts.....");
-				if (filePath == null || jmxuser == null || jmxPassword == null) {
+				if (filePath == null ) {
 					System.err.println(Ansi.ansi().fg(Color.RED)
 							.a("Input configuration file path , jmxuser or jxmpassword is missing").toString());
+				}
+				if("false".equalsIgnoreCase( contextFromFabric) && (jmxuser == null  || jmxPassword == null) ){
+					System.err.println(Ansi.ansi().fg(Color.RED)
+							.a("When choosing jmx route to get contexts jmx user and password needs to be provided"));
+					System.exit(0);
 				}
 
 				HashSet<EnsembleContainer> ensembleContainerList = getDetails();
@@ -615,45 +623,49 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	private void getContextsFromFabric(Container container, HashSet<Context> contextList) {
 
 		try {
+			final String password = getEscapedPassword(remotePassword);
+			final String command = "fabric:container-connect -u " + remoteUser + " -p " +  password +" "
+					+ container.getId() + " route-list | tac -f /tmp/route" + container.getId() + ".txt";
+			LOG.info("{}",command);
 			Object execute = null;
-			execute = session.execute("fabric:container-connect " + container.getId()
-					+ " route-list | tac -f /tmp/route" + container.getId() + ".txt");
+			execute = session.execute(command);
 			if (execute != null) {
 				try {
-
-					List<String> readLines = Files.readLines(new File("/tmp/routecodecontainer2.txt"));
-					System.out.println(readLines.size());
-					if (readLines != null && readLines.size() > 3) {
-						int count = 0;
-						for (String line : readLines) {
-							if (count > 2) {
-								line = line.replaceAll("\\s{2,}", " ").trim();
-								List<String> splitLine = Arrays.asList(line.split(" "));
-								boolean isMatch = false;
-								for (Context context : contextList) {
-									if (context.getContextId().equalsIgnoreCase(splitLine.get(0))) {
-										if (splitLine.get(2).toLowerCase().equalsIgnoreCase("started")) {
-											context.setStartedRoutes(context.getStartedRoutes() + 1);
+					final File file = new File("/tmp/route" + container.getId() + ".txt");
+					if (file != null && file.exists()) {
+						List<String> readLines = Files.readLines(file);
+						if (readLines != null && readLines.size() > 3) {
+							int count = 0;
+							for (String line : readLines) {
+								if (count > 2) {
+									line = line.replaceAll("\\s{2,}", " ").trim();
+									List<String> splitLine = Arrays.asList(line.split(" "));
+									boolean isMatch = false;
+									for (Context context : contextList) {
+										if (context.getContextId().equalsIgnoreCase(splitLine.get(0))) {
+											if (splitLine.get(2).toLowerCase().equalsIgnoreCase("started")) {
+												context.setStartedRoutes(context.getStartedRoutes() + 1);
+											}
+											context.setTotalRoutes(context.getTotalRoutes() + 1);
+											isMatch = true;
 										}
-										context.setTotalRoutes(context.getTotalRoutes() + 1);
-										isMatch = true;
+
 									}
-
+									if (!isMatch) {
+										Context context = new Context();
+										context.setTotalRoutes(1);
+										if (splitLine.get(2).toLowerCase().equalsIgnoreCase("started"))
+											context.setStartedRoutes(1);
+										context.setContextState("Started");
+										context.setContextId(splitLine.get(0));
+										contextList.add(context);
+									}
 								}
-								if (!isMatch) {
-									Context context = new Context();
-									context.setTotalRoutes(1);
-									if (splitLine.get(2).toLowerCase().equalsIgnoreCase("started"))
-										context.setStartedRoutes(1);
-									context.setContextState("Started");
-									context.setContextId(splitLine.get(0));
-									contextList.add(context);
-								}
+								count++;
 							}
-							count++;
 						}
+						Files.recursiveDelete(file);
 					}
-
 				} catch (Exception e) {
 					LOG.warn("Error when getting contexts {}", e.getMessage());
 				}
@@ -669,8 +681,24 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	/*
 	 * Method enquires the container via Jolokia and gets all the running camel
 	 * contexts and routes
+	 * Could not find a escape uitl for karaf command by-pass
 	 */
 
+	private String getEscapedPassword(String remotePassword) {
+		if(remotePassword.contains("!")) {
+			return remotePassword.replace("!", "\\!");
+		}
+		if(remotePassword.contains("$"))
+			return remotePassword.replace("$", "\\$");
+		if(remotePassword.contains("#"))
+			return remotePassword.replace("~", "\\~");
+		
+		if(remotePassword.contains("#"))
+			return remotePassword.replace("#", "\\#");
+		return remotePassword;
+	}
+
+	
 	private HashSet<Context> getContextList(Container container) {
 		HashSet<Context> contexts = new HashSet<Context>();
 		if ("false".equalsIgnoreCase(contextFromFabric)) {
