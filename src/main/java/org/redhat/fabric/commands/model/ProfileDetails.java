@@ -3,6 +3,8 @@ package org.redhat.fabric.commands.model;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 public class ProfileDetails implements Serializable{
 	
@@ -203,10 +205,43 @@ public class ProfileDetails implements Serializable{
 		} else if (!bundles.equals(other.bundles))
 			return false;
 		if (configurations == null) {
-			if (other.configurations != null)
+			if (other.configurations != null) {
 				return false;
-		} else if (!configurations.equals(other.configurations))
-			return false;
+		}
+		} else  {
+			 Map<String, Map<String, String>> thisConfiguration = configurations;
+			 Map<String, Map<String, String>> otherConfiguration = other.configurations;
+			
+			if(thisConfiguration.get("io.fabric.agent")!=null) {
+				String isMatch = null;
+				Map<String, String> thisfabricagent = thisConfiguration.get("io.fabric.agent");
+				for(Map.Entry<String, String> entrySet :thisfabricagent.entrySet()) {
+					if(entrySet.getKey().contains("lastRefresh")) {
+						isMatch=entrySet.getKey();
+						break;
+					}
+				}
+				if(isMatch!=null)
+					thisfabricagent.remove(isMatch);
+				
+			}
+			if(otherConfiguration.get("io.fabric.agent")!=null) {
+				String isMatch = null;
+				Map<String, String> otherFabricAgent = otherConfiguration.get("io.fabric.agent");
+				for(Map.Entry<String, String> entrySet :otherFabricAgent.entrySet()) {
+					if(entrySet.getKey().contains("lastRefresh")) {
+						isMatch=entrySet.getKey();
+						break;
+					}
+				}
+				if(isMatch!=null)
+					otherFabricAgent.remove(isMatch);
+				
+			}
+			if(!thisConfiguration.equals(otherConfiguration))
+				return false;
+		}
+			
 		if (fabs == null) {
 			if (other.fabs != null)
 				return false;
@@ -217,11 +252,7 @@ public class ProfileDetails implements Serializable{
 				return false;
 		} else if (!features.equals(other.features))
 			return false;
-		if (libraries == null) {
-			if (other.libraries != null)
-				return false;
-		} else if (!libraries.equals(other.libraries))
-			return false;
+		
 		if (parents == null) {
 			if (other.parents != null)
 				return false;
