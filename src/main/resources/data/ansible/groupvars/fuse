@@ -1,0 +1,13 @@
+---
+
+
+configCommand: container-connect -u {{fuseuser}} -p {{fusePassword}} {{mgmtContainer}} container-profile-synch  --remoteUser {{fuseuser}} --remotePassword {{fusePassword}} --storeFile {{filePath}}
+synchCommand: container-connect -u {{fuseuser}} -p {{fusePassword}} {{mgmtContainer}} container-profile-synch  --remoteUser {{fuseuser}} --remotePassword {{fusePassword}}  --synchContexts false --child false --environment d --zoneName edc {{filePath}}
+sourcedirectory: /home/vagrant/jboss-fuse-6.3.0.redhat-434/bin
+fuseuser: admin
+fusePassword: admin
+filePath: /tmp/config.json
+localPath: /Users/smunirat/Downloads/
+fileName: config.json
+mgmtContainer: codecontainer
+

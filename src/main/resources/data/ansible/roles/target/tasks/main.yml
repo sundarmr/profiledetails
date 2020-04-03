@@ -1,0 +1,10 @@
+---
+
+ - name: copy file
+   copy:
+     src: "{{localPath}}/{{fileName}}"
+     dest: "{{filePath}}"
+   register: file_copied
+
+ - name: execute command
+   shell: ./client -u "{{fuseuser}}" -p "{{fusePassword}}" "{{synchCommand}}"  chdir="{{sourcedirectory}}"

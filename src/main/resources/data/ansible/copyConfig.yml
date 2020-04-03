@@ -1,0 +1,9 @@
+---
+
+ - hosts: source
+   gather_facts: yes
+   vars_files:
+             - groupvars/fuse
+   roles:
+     - source
+
