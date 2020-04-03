@@ -2,31 +2,35 @@ Command to Synch up Ensemble Environment with a configuration file
 
 # Command to Print Configuration
 
-`container-profile-synch --jmxuser <username> --jmxPassword <password>`
+`container-profile-synch  --remoteUser <user> --remotePassword <password> --storeFile <FilePath>`
 
-The above command will print out a json string with all the container details  
+The above command will store the configuration of the ensemble to the file path provided at --storeFile , if the option is not provided will default to /tmp/config.json  
 
 * Profiles associated with the container
 * Bundles , fabs , features , repositories , configurations associated with the Container ( Read Profile )
 * Camel Contexts running in the container.
   * No of routes for each context.
   * State of the route
-
-`container-profile-synch --jmxuser <username> --jmxPassword <password> --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts false --child <true/false> --environment <d/q/s/p> --zoneName <edc/rdc>  --ignoreContainerName<The container that the  code is running> <filePath>`
-
-   The above command will read the file from filepath and apply the configurations to the target environments and synch up the ensemble to resemble the source configuration
   
- * Will Create New containers if missing in targe
- * Will create / update the profiles to reflect the source system profiles
- * Will synch up associations of the containers and profiles
+`container-profile-synch  --jmxuser <user> --jmxPassword <password> --contextFromFabric false --storeFile <FilePath>`
 
-`container-profile-synch --jmxuser <username> --jmxPassword <password> --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts only --child <true/false> --environment <d/q/s/p> --zoneName <edc/rdc>  --ignoreContainerName<The container that your do not want to get synched>  <filePath>`
+The above command will do what exactly the first command does but will get the context information from jmx instead of fabric
 
-   The above command will read the file from filepath and apply the configurations to the target environments and synch up the ensemble to resemble the source configuration
+`container-profile-synch  --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts false --child <true/false> --environment <d/q/s/p> --zoneName <edc/rdc> --autoRecheckCount 10 --runStatusCheck true --statusCheckInterval 60000 <configFilePath>`
+
+							
+The above command will read the file from filepath and apply the configurations to the target environments and synch up the ensemble to resemble the source configuration
+*Will Create New containers if missing in target
+*Will create / update the profiles to reflect the source system profiles
+*Will synch up associations of the containers and profiles	
+*Once all the containers have been created or synched up the code will run for every statusCheckInterval to verify the ensemble environment to check if all the containers are provisioned and if not will try and correct their state so that they are given an opportunity to start fast. This will occur autoRecheckCount times.						
+
+
+`container-profile-synch  --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts false --child <true/false> --environment <d/q/s/p> --zoneName <edc/rdc> --autoRecheckCount 10 --runStatusCheck true --statusCheckInterval 60000 --demoRun <configFilePath>`
+
+The above command will create a log trail of activities that it would perform if run actually and with a demoRun , this can be useful to understand what the environment will look like and how many profiles and containers will be modified.
   
- * Will synch up camel contexts in the target environment to reflect source
- * Will try to start up the contexts where possible
- 
-`container-profile-synch --jmxuser <username> --jmxPassword <password> --checkAndRestartOnly true`
-    
-   The above command will analyze all the containers and attempt to restart containers that have errored out and also start the containers which are stopped.It will also check the container state and recreate them if there is an issue with it.
+
+`container-profile-synch --checkAndRestartContainers true`
+
+ The above command will check all the existing containers in the ensemble and restart the ones which are not provisioned , errored or stopped. It will identify the inconsistencies in the container and attempt to restore the containers.
