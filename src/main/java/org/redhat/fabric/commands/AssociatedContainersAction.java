@@ -277,6 +277,10 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			}
 
 			else if (filePath != null && !filePath.isEmpty() && !"only".equalsIgnoreCase(synchContexts)) {
+				if( versionname == null ) {
+					System.err.println(Ansi.ansi().fg(Color.RED).a("version name is needed use option --versionName"));
+					throw new Exception("Version name not found");
+				}
 				long currentTimeMillis = System.currentTimeMillis();
 				HashSet<EnsembleContainer> ensembleContainerList = getDetails();
 				LOG.debug("Master Container Map {} ", ensembleContainerList);
