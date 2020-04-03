@@ -16,7 +16,7 @@ The above command will store the configuration of the ensemble to the file path 
 
 The above command will do what exactly the first command does but will get the context information from jmx instead of fabric
 
-`container-profile-synch  --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts false --child <true/false> --environment <d/q/s/p> --zoneName <edc/rdc> --autoRecheckCount 10 --runStatusCheck true --statusCheckInterval 60000 <configFilePath>`
+`container-profile-synch  --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts false --child <true/false> --environment <d/q/s/p> --zoneName <edc/rdc> --path <Path on the remote server where the containers are to be created > --autoRecheckCount 10 --runStatusCheck true --statusCheckInterval 60000 <configFilePath>`
 
 							
 The above command will read the file from filepath and apply the configurations to the target environments and synch up the ensemble to resemble the source configuration
@@ -26,7 +26,7 @@ The above command will read the file from filepath and apply the configurations 
 *Once all the containers have been created or synched up the code will run for every statusCheckInterval to verify the ensemble environment to check if all the containers are provisioned and if not will try and correct their state so that they are given an opportunity to start fast. This will occur autoRecheckCount times.						
 
 
-`container-profile-synch  --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts false --child <true/false> --environment <d/q/s/p> --zoneName <edc/rdc> --autoRecheckCount 10 --runStatusCheck true --statusCheckInterval 60000 --demoRun <configFilePath>`
+`container-profile-synch  --remoteUser <remoteusername> --remotePassword <remotesystempassword> --synchContexts false --child <true/false> --environment <d/q/s/p> --zoneName <edc/rdc> --path <Path on the remote server where the containers are to be created > --autoRecheckCount 10 --runStatusCheck true --statusCheckInterval 60000 --demoRun <configFilePath>`
 
 The above command will create a log trail of activities that it would perform if run actually and with a demoRun , this can be useful to understand what the environment will look like and how many profiles and containers will be modified.
   
