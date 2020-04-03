@@ -140,6 +140,9 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 	@Option(name = "--statusCheckInterval", description = "Time Interval to check  the status of the containers after creation")
 	private long statusCheckInterval = 600000L;
+	
+	@Option(name = "--versionName", description = "Version name which will be used for directory name of containers")
+	private String versionname;
 
 	static int count = 2;
 
@@ -771,13 +774,12 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 									String actualPath = null;
 									if (containerName.contains("amq")) {
-										// Version needs to be parameterized
 										StringBuffer pathBuffer = new StringBuffer();
-										pathBuffer.append(path).append("/amq/630434");
+										pathBuffer.append(path).append("/amq/"+versionname);
 										actualPath = pathBuffer.toString();
 									} else {
 										StringBuffer pathBuffer = new StringBuffer();
-										pathBuffer.append(path).append("/camel/630434");
+										pathBuffer.append(path).append("/camel/"+versionname);
 										actualPath = pathBuffer.toString();
 									}
 
