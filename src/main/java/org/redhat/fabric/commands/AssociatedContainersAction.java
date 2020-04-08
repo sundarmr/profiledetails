@@ -627,8 +627,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	private void getContextsFromFabric(Container container, HashSet<Context> contextList) {
 
 		try {
-			final String password = getEscapedPassword(remotePassword);
-			final String command = "fabric:container-connect -u " + remoteUser + " -p " +  password +" "
+			//final String password = getEscapedPassword(jmxPassword);
+			final String command = "fabric:container-connect -u " + jmxuser + " -p " +  jmxPassword +" "
 					+ container.getId() + " route-list | tac -f /tmp/route" + container.getId() + ".txt";
 			LOG.info("{}",command);
 			Object execute = null;
