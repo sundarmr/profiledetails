@@ -1256,7 +1256,6 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 						&& !ignoreProfiles.contains(oldProfile.getProfileName())) {
 					missingProfiles.add(oldProfile);
 					missingProfileIds.add(oldProfile.getProfileName());
-					break;
 				}
 			
 		}
