@@ -93,11 +93,11 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	@Option(name = "--jmxPassword", description = "JmxPassword")
 	private String jmxPassword;
 
-	@Option(name = "--remoteUser", description = "Remote user in case if we need to create a missing container")
-	private String remoteUser;
+	@Option(name = "--sshUser", description = "Remote user in case if we need to create a missing container")
+	private String sshUser;
 
-	@Option(name = "--remotePassword", description = "Remote user password to ssh to the host")
-	private String remotePassword;
+	@Option(name = "--sshPassword", description = "Remote user password to ssh to the host")
+	private String sshPassword;
 
 	@Option(name = "--synchContexts", description = "Should contexts be synched up takes \n1. true : does synch along with profile synch activity \n2. false : does not synch up contexts \n3. only synchs contexts ")
 	private String synchContexts;
@@ -238,7 +238,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 
 			if (child != null && filePath != null) {
 
-				if ((remoteUser == null || remotePassword == null) && privateKeyFile == null) {
+				if ((sshUser == null || sshPassword == null) && privateKeyFile == null) {
 					System.err.println(Ansi.ansi().fg(Color.RED).a("Error Executing Command: ").a(
 							"Remote User and Password / Private Key is needed  use options --remoteUser and --remotePassword\n")
 							.fg(Ansi.Color.DEFAULT).toString());
@@ -357,7 +357,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				CreateSshContainerOptions.Builder sshBuilder = CreateSshContainerOptions.builder()
 						.name(container.getId()).ensembleServer(container.isEnsembleServer()).resolver(resolver)
 						.bindAddress(bindAddress).manualIp(manualIp).number(1).host(container.getLocalHostname())
-						.preferredAddress(container.getLocalHostname()).username(remoteUser).password(remotePassword)
+						.preferredAddress(container.getLocalHostname()).username(sshUser).password(sshPassword)
 						.proxyUri(fabricService.getMavenRepoURI()).zookeeperUrl(fabricService.getZookeeperUrl())
 						.zookeeperPassword(isEnsembleServer && zookeeperPassword != null ? zookeeperPassword
 								: fabricService.getZookeeperPassword())
@@ -467,7 +467,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			if (oldConfiguration.contains(newContainer)) {
 				EnsembleContainer oldContainer = oldConfiguration.get(oldConfiguration.indexOf(newContainer));
 				if (oldContainer.getContexts() != null
-						&& !oldContainer.getContexts().equals(newContainer.getContexts())) {
+						&& !oldContainer.getContexts().equals(newContainer.getContexts())&& !contextContainers.contains(oldContainer)) {
 					contextContainers.add(oldContainer);
 				}
 			}
@@ -627,8 +627,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	private void getContextsFromFabric(Container container, HashSet<Context> contextList) {
 
 		try {
-			final String password = getEscapedPassword(remotePassword);
-			final String command = "fabric:container-connect -u " + remoteUser + " -p " +  password +" "
+			final String password = getEscapedPassword(jmxPassword);
+			final String command = "fabric:container-connect -u " + jmxuser + " -p " +  password +" "
 					+ container.getId() + " route-list | tac -f /tmp/route" + container.getId() + ".txt";
 			LOG.info("{}",command);
 			Object execute = null;
@@ -831,7 +831,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 												.builder().name(containerName).ensembleServer(isEnsembleServer)
 												.resolver(resolver).bindAddress(bindAddress).manualIp(manualIp)
 												.number(1).host(pickHost).preferredAddress(hostAddress)
-												.username(remoteUser).password(remotePassword)
+												.username(sshUser)
+												.password(sshPassword)
 												.proxyUri(fabricService.getMavenRepoURI())
 												.zookeeperUrl(fabricService.getZookeeperUrl())
 												.zookeeperPassword(isEnsembleServer && zookeeperPassword != null
@@ -1124,7 +1125,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 		StringBuilder serverName = new StringBuilder();
 		serverName.append(serverFirstLetter.get(zoneName)).append(environment).append("lesb")
 				.append(firstNumber.get(environment)).append(secondNumber.get(split[0])).append(split[2].charAt(2));
-		return serverName.toString();
+		return "fuse-001.local";
 	}
 
 	/*
@@ -1247,14 +1248,14 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 				newProfileDetails.size());
 
 		for (ProfileDetails oldProfile : oldProfileDetails) {
-			for (ProfileDetails newProfile : newProfileDetails) {
-				if (oldProfile.getProfileName().equalsIgnoreCase(newProfile.getProfileName())
+			
+				if (!containerProfiles.contains(oldProfile.getProfileName())
 						&& !ignoreProfiles.contains(oldProfile.getProfileName())) {
 					missingProfiles.add(oldProfile);
 					missingProfileIds.add(oldProfile.getProfileName());
 					break;
 				}
-			}
+			
 		}
 
 		if (missingProfiles != null && missingProfiles.size() > 0) {
