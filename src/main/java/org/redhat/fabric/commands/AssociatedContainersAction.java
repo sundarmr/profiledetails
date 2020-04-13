@@ -801,12 +801,15 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 										availableProfiles = getProfiles(oldContainer.getVersion(), associatedProfiles,
 												oldProfieDetails, oldContainer.getContainerName());
 										associatedProfiles.clear();
-
-										for (Profile profile : availableProfiles) {
-											String id = profile.getId();
-											if (!"default".equalsIgnoreCase(id))
-												associatedProfiles.add(profile.getId());
+										
+										if (availableProfiles != null) {
+											for (Profile profile : availableProfiles) {
+												String id = profile.getId();
+												if (!"default".equalsIgnoreCase(id))
+													associatedProfiles.add(profile.getId());
+											}
 										}
+										
 									} catch (Exception e) {
 										LOG.warn(e.getMessage(), e);
 									}
@@ -1211,8 +1214,16 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	 * Builds profiles using profile builder provided and source profile information
 	 */
 	private void buildProfile(ProfileBuilder builder, ProfileDetails profileDetails) {
-		if (profileDetails.getParents() != null)
-			builder.setParents(new ArrayList<String>(profileDetails.getParents()));
+		if (profileDetails.getParents() != null) {
+			List<String> parents = profileDetails.getParents();
+			for(String parent:parents) {
+				if(profileService.hasProfile(profileDetails.getProfileVersion(), parent)) {
+					builder.addParent(parent);
+				}else {
+					LOG.warn("Parent {} for the profile {} does not exist yet , rerun of the command is needed",parent,profileDetails.getProfileName());
+				}
+			}
+		}
 		if (profileDetails.getBundles() != null)
 			builder.setBundles(new ArrayList<String>(profileDetails.getBundles()));
 		if (profileDetails.getFeatures() != null)
