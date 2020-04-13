@@ -45,3 +45,7 @@ container-change-profile codecontainer codeprofile
  
  
  | 181 - org\.redhat\.fabric\.profiledetails-local - 2\.0\.169\.Snapshot |
+ 
+ 
+ 
+ container-profile-synch --jmxuser admin --jmxPassword admin --sshUser vagrant --sshPassword fm2tm\!\! --synchContexts true --environment d --zoneName rdc --child false --versionName 630434 --path /home/vagrant /Users/smunirat/Downloads/test.json

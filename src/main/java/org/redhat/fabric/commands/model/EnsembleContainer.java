@@ -87,49 +87,50 @@ public class EnsembleContainer implements Serializable {
 		return result;
 	}
 
-	// Intentional overide of equals to so as to compare only
-	// containernames and not other objects
+	
+	
+
 	@Override
 	public boolean equals(Object obj) {
-		boolean returnValue = false;
-		if (obj == null)
-			return returnValue;
-
-		EnsembleContainer newContainer = (EnsembleContainer) obj;
-		String[] thisContainerName = this.containerName.split("_");
-		String[] newContainerName = newContainer.getContainerName().split("_");
-		if(thisContainerName == null || newContainerName == null) {
-			if(this.containerName.equalsIgnoreCase(newContainer.getContainerName()))
-				return true;
-		}
-		for(int i=0;i<thisContainerName.length;i++) {
-			
-			if(thisContainerName[i].equalsIgnoreCase(newContainerName[i]) && i!=2){
-				returnValue = true;
-			}else {
-				returnValue = false;
-			}
-		}
-		
-		return returnValue;
-	}
-	
-	
-	public boolean equals(Object obj,String oldIgnoreValue,String newIgnoreValue) {
-		
+		if (this == obj)
+			return true;
 		if (obj == null)
 			return false;
-		EnsembleContainer newContainer = (EnsembleContainer) obj;
-		String thisContainerName = this.containerName.replace(oldIgnoreValue, "");
-		String newContainerName = newContainer.getContainerName().replace(newIgnoreValue,"");
-		Log.info("Old ContainerName: "+thisContainerName);
-		Log.info("New ContainerName: "+newContainerName);
-		if(thisContainerName.equalsIgnoreCase(newContainerName)) 
-				return true;
-		
-		return false;
+		if (getClass() != obj.getClass())
+			return false;
+		EnsembleContainer other = (EnsembleContainer) obj;
+		if (containerName == null) {
+			if (other.containerName != null)
+				return false;
+		} else if (!containerName.equals(other.containerName))
+			return false;
+		if (contexts == null) {
+			if (other.contexts != null)
+				return false;
+		} else if (!contexts.equals(other.contexts))
+			return false;
+		if (envDefaultVersion == null) {
+			if (other.envDefaultVersion != null)
+				return false;
+		} else if (!envDefaultVersion.equals(other.envDefaultVersion))
+			return false;
+		if (parent == null) {
+			if (other.parent != null)
+				return false;
+		} else if (!parent.equals(other.parent))
+			return false;
+		if (profiles == null) {
+			if (other.profiles != null)
+				return false;
+		} else if (!profiles.equals(other.profiles))
+			return false;
+		if (version == null) {
+			if (other.version != null)
+				return false;
+		} else if (!version.equals(other.version))
+			return false;
+		return true;
 	}
-
 
 	@Override
 	public String toString() {

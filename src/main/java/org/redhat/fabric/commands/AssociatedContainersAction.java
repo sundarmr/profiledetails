@@ -467,11 +467,12 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			if (oldConfiguration.contains(newContainer)) {
 				EnsembleContainer oldContainer = oldConfiguration.get(oldConfiguration.indexOf(newContainer));
 				if (oldContainer.getContexts() != null
-						&& !oldContainer.getContexts().equals(newContainer.getContexts())&& !contextContainers.contains(oldContainer)) {
+						&& !oldContainer.getContexts().equals(newContainer.getContexts()) && !contextContainers.contains(oldContainer) ) {
 					contextContainers.add(oldContainer);
 				}
 			}
 		}
+		
 		if (contextContainers.size() > 0) {
 			List<String> containerNames = new ArrayList<String>();
 			for (EnsembleContainer container : contextContainers) {
@@ -502,6 +503,8 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 			shutDownExecutorService(contextService);
 		}
 	}
+
+	
 
 	/*
 	 * Recursive method to remove profiles with 6 second retry when profile lock
@@ -627,8 +630,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 	private void getContextsFromFabric(Container container, HashSet<Context> contextList) {
 
 		try {
-			final String password = getEscapedPassword(jmxPassword);
-			final String command = "fabric:container-connect -u " + jmxuser + " -p " +  password +" "
+			final String command = "fabric:container-connect -u " + jmxuser + " -p " +  jmxPassword +" "
 					+ container.getId() + " route-list | tac -f /tmp/route" + container.getId() + ".txt";
 			LOG.info("{}",command);
 			Object execute = null;
@@ -743,6 +745,7 @@ public class AssociatedContainersAction extends AbstractContainerCreateAction {
 					public void run() {
 						try {
 							// To get the equivalent containe names in the current zone and environment
+							
 							final String containerName = getContainerName(oldContainer.getContainerName());
 
 							Container newContainer = null;
